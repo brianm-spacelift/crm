@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Spacelift Content Advisor</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #0f0a1a; color: #e8e6f0; font-family: Georgia, serif; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 32px 20px; }
+  #app { width: 100%; max-width: 600px; }
+
+  .header { text-align: center; margin-bottom: 28px; }
+  .eyebrow { font-size: 10px; letter-spacing: 0.2em; color: #9901ff; text-transform: uppercase; margin-bottom: 8px; font-family: sans-serif; font-weight: 600; }
+  h1 { font-size: 26px; font-weight: 600; color: #f0eeff; }
+  .subtitle { font-size: 13px; color: #5a5070; margin-top: 8px; font-family: sans-serif; }
+
+  .screen-title { font-family: sans-serif; font-size: 16px; color: #d4d0e8; margin-bottom: 5px; font-weight: 500; }
+  .screen-hint { font-family: sans-serif; font-size: 12px; color: #4a4060; margin-bottom: 18px; }
+
+  .breadcrumb { display: flex; align-items: center; gap: 6px; margin-bottom: 20px; flex-wrap: wrap; }
+  .bc-item { font-family: sans-serif; font-size: 11px; color: #4a4060; cursor: pointer; }
+  .bc-item:hover { color: #9901ff; }
+  .bc-sep { color: #2a2040; font-size: 11px; }
+  .bc-active { font-family: sans-serif; font-size: 11px; color: #9901ff; }
+
+  .option-card { background: #1a1128; border: 1px solid #2a2040; border-radius: 10px; padding: 16px 18px; cursor: pointer; display: flex; align-items: center; gap: 14px; margin-bottom: 8px; transition: all 0.15s; }
+  .option-card:hover { border-color: #9901ff; transform: translateY(-1px); }
+  .oc-icon { font-size: 20px; flex-shrink: 0; }
+  .oc-label { font-family: sans-serif; font-size: 14px; color: #d4d0e8; display: block; }
+  .oc-desc { font-family: sans-serif; font-size: 11px; color: #4a4060; margin-top: 3px; display: block; }
+  .oc-arrow { color: #2a2040; font-size: 18px; flex-shrink: 0; margin-left: auto; }
+
+  .tag-grid { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+  .tag { background: #1a1128; border: 1px solid #2a2040; border-radius: 20px; padding: 8px 16px; cursor: pointer; font-family: sans-serif; font-size: 12px; color: #7a7090; transition: all 0.15s; display: inline-flex; align-items: center; gap: 5px; }
+  .tag:hover { border-color: #9901ff; color: #d4d0e8; }
+  .tag.sel { background: #1e0a38; border-color: #9901ff; color: #cc66ff; }
+
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 18px; }
+  .persona-card { background: #1a1128; border: 1px solid #2a2040; border-radius: 10px; padding: 16px; cursor: pointer; transition: all 0.15s; }
+  .persona-card:hover { border-color: #9901ff; }
+  .persona-card.sel { border-color: #9901ff; background: #1e0a38; }
+  .pc-icon { font-size: 22px; margin-bottom: 7px; display: block; }
+  .pc-name { font-family: sans-serif; font-size: 13px; color: #d4d0e8; font-weight: 600; display: block; }
+  .pc-desc { font-family: sans-serif; font-size: 10px; color: #4a4060; margin-top: 3px; display: block; line-height: 1.4; }
+
+  .asset-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 18px; }
+  .asset-card { background: #1a1128; border: 1px solid #2a2040; border-radius: 10px; padding: 12px 14px; cursor: pointer; transition: all 0.15s; display: flex; align-items: center; gap: 10px; }
+  .asset-card:hover { border-color: #9901ff; }
+  .asset-card.sel { border-color: #9901ff; background: #1e0a38; }
+  .ac-icon { font-size: 16px; flex-shrink: 0; }
+  .ac-name { font-family: sans-serif; font-size: 12px; color: #d4d0e8; display: block; }
+  .ac-sub { font-family: sans-serif; font-size: 10px; color: #4a4060; display: block; margin-top: 2px; }
+
+  .filter-section { margin-bottom: 18px; }
+  .filter-label { font-family: sans-serif; font-size: 10px; color: #4a4060; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 8px; }
+
+  .stage-row { display: flex; gap: 6px; flex-wrap: wrap; }
+  .stage-tag { background: #1a1128; border: 1px solid #2a2040; border-radius: 6px; padding: 7px 14px; cursor: pointer; font-family: sans-serif; font-size: 12px; color: #5a5070; transition: all 0.15s; }
+  .stage-tag:hover { border-color: #3a2060; color: #d4d0e8; }
+  .stage-tag.sel { background: #1e0a38; border-color: #9901ff; color: #cc66ff; }
+
+  .divider { height: 1px; background: #1e1830; margin: 16px 0; }
+  .narrow-label { font-family: sans-serif; font-size: 12px; color: #4a4060; margin-bottom: 10px; }
+
+  .btn-row { display: flex; justify-content: space-between; align-items: center; margin-top: 16px; }
+  .btn-purple { background: #9901ff; color: #ffffff; border: none; border-radius: 8px; padding: 11px 24px; font-family: sans-serif; font-size: 13px; font-weight: 700; cursor: pointer; min-width: 160px; transition: opacity 0.15s; }
+  .btn-purple:hover { opacity: 0.88; }
+  .btn-purple:disabled { background: #2a2040; color: #444; cursor: default; opacity: 1; }
+  .btn-ghost { background: transparent; color: #4a4060; border: 1px solid #2a2040; border-radius: 8px; padding: 11px 20px; font-family: sans-serif; font-size: 13px; cursor: pointer; }
+  .btn-ghost:hover { color: #7a7090; border-color: #3a3050; }
+  .btn-outline-purple { background: transparent; color: #9901ff; border: 1px solid #9901ff44; border-radius: 8px; padding: 7px 16px; font-family: sans-serif; font-size: 12px; cursor: pointer; }
+
+  .results-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px; }
+  .results-meta { font-family: sans-serif; font-size: 12px; color: #4a4060; margin-bottom: 6px; }
+  .r-chips { display: flex; flex-wrap: wrap; gap: 5px; }
+  .r-chip { background: #1a1128; border: 1px solid #3a2060; border-radius: 10px; padding: 2px 10px; font-family: sans-serif; font-size: 11px; color: #cc66ff; }
+
+  .result-card { background: #1a1128; border: 1px solid #2a2040; border-radius: 12px; padding: 16px 18px; margin-bottom: 10px; transition: border-color 0.15s; }
+  .result-card:hover { border-color: #3a2060; }
+  .result-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+  .result-info { flex: 1; }
+  .result-badges { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 6px; align-items: center; }
+  .type-badge { font-size: 10px; font-family: sans-serif; font-weight: 700; padding: 2px 8px; border-radius: 6px; color: #1a1128; white-space: nowrap; }
+  .topic-badge { font-size: 10px; font-family: sans-serif; padding: 2px 8px; border-radius: 6px; background: #1e0a38; color: #cc66ff; border: 1px solid #3a1060; }
+  .result-name { font-size: 15px; font-weight: 600; color: #f0eeff; line-height: 1.3; margin-bottom: 6px; }
+  .result-notes { font-family: sans-serif; font-size: 12px; color: #5a5070; line-height: 1.5; margin: 0; }
+  .open-btn { background: #9901ff; color: #ffffff; border-radius: 7px; padding: 8px 14px; font-size: 12px; font-family: sans-serif; font-weight: 700; text-decoration: none; white-space: nowrap; flex-shrink: 0; display: inline-block; }
+  .open-btn:hover { opacity: 0.88; }
+
+  .count-badge { display: inline-block; background: #1e0a38; border: 1px solid #3a1060; border-radius: 10px; padding: 1px 8px; font-family: sans-serif; font-size: 10px; color: #9901ff; margin-left: 5px; }
+
+  .no-results { text-align: center; padding: 40px 20px; }
+  .no-results-icon { font-size: 36px; margin-bottom: 12px; }
+  .no-results-msg { font-family: sans-serif; font-size: 14px; color: #4a4060; margin-bottom: 6px; }
+  .no-results-hint { font-family: sans-serif; font-size: 12px; color: #3a3050; }
+
+  .loading-wrap { text-align: center; padding: 48px 20px; }
+  .loading-spinner { width: 32px; height: 32px; border: 3px solid #2a2040; border-top-color: #9901ff; border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 16px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loading-text { font-family: sans-serif; font-size: 13px; color: #4a4060; }
+
+  .error-box { background: #1e0a1a; border: 1px solid #4a1a3a; border-radius: 10px; padding: 16px 18px; margin-bottom: 16px; }
+  .error-title { font-family: sans-serif; font-size: 13px; color: #e05c9c; font-weight: 600; margin-bottom: 4px; }
+  .error-msg { font-family: sans-serif; font-size: 12px; color: #7a4a6a; line-height: 1.5; }
+
+  .config-box { background: #1a1128; border: 1px solid #9901ff44; border-radius: 12px; padding: 24px; margin-bottom: 20px; }
+  .config-title { font-family: sans-serif; font-size: 15px; color: #9901ff; font-weight: 600; margin-bottom: 8px; }
+  .config-desc { font-family: sans-serif; font-size: 12px; color: #5a5070; margin-bottom: 16px; line-height: 1.6; }
+  .config-input { width: 100%; background: #0f0a1a; border: 1px solid #2a2040; border-radius: 8px; padding: 10px 14px; font-family: sans-serif; font-size: 12px; color: #d4d0e8; outline: none; }
+  .config-input:focus { border-color: #9901ff; }
+  .config-input::placeholder { color: #3a3050; }
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+
+
+const TOPICS = [
+  { id:"Governance",           label:"Governance",           icon:"🏛️" },
+  { id:"Security",             label:"Security",             icon:"🔐" },
+  { id:"Compliance",           label:"Compliance",           icon:"✅" },
+  { id:"Migration",            label:"Migration",            icon:"🚀" },
+  { id:"Workflow / Automation",label:"Workflow / Automation",icon:"⚡" },
+  { id:"Pricing / ROI",        label:"Pricing / ROI",        icon:"💰" },
+  { id:"AI / Intelligence",    label:"AI / Intelligence",    icon:"🤖" },
+  { id:"Developer Experience", label:"Developer Experience", icon:"💻" },
+  { id:"Scalability",          label:"Scalability",          icon:"📈" },
+  { id:"Cost Optimization",    label:"Cost Optimization",    icon:"🎯" },
+];
+
+const PERSONAS = [
+  { id:"Technical", label:"Technical",  icon:"⚙️", desc:"DevOps, Platform Engineer, Architect, SRE" },
+  { id:"Manager",   label:"Manager",    icon:"👔", desc:"Engineering Manager, VP Engineering, Team Lead" },
+  { id:"Executive", label:"Executive",  icon:"🏢", desc:"CTO, CIO, CISO, VP Infrastructure" },
+  { id:"End-User",  label:"End User",   icon:"💻", desc:"Developer, day-to-day practitioner" },
+];
+
+const ASSET_TYPES = [
+  { id:"Case Study",              label:"Case Study",              icon:"📋", sub:"Customer proof points" },
+  { id:"Competitive Comparison",  label:"Competitive Comparison",  icon:"⚔️", sub:"vs. competitors" },
+  { id:"Battlecard",              label:"Battlecard",              icon:"🃏", sub:"Quick competitive ref" },
+  { id:"One-Pager",               label:"One-Pager",               icon:"📄", sub:"Single page overview" },
+  { id:"Datasheet",               label:"Datasheet",               icon:"📊", sub:"Feature & spec sheet" },
+  { id:"Solution Brief",          label:"Solution Brief",          icon:"📝", sub:"Problem/solution framing" },
+  { id:"Product Overview",        label:"Product Overview",        icon:"🔭", sub:"Product capabilities" },
+  { id:"Technical Deep Dive",     label:"Technical Deep Dive",     icon:"🔬", sub:"Architecture & detail" },
+  { id:"Whitepaper",              label:"Whitepaper",              icon:"📚", sub:"Research & long-form" },
+  { id:"E-book",                  label:"E-book",                  icon:"📖", sub:"Long-form educational" },
+  { id:"Blog / Thought Leadership",label:"Blog / Article",         icon:"✍️", sub:"Thought leadership" },
+  { id:"Webinar / Video",         label:"Webinar / Video",         icon:"🎥", sub:"On-demand content" },
+  { id:"Sales Deck",              label:"Sales Deck",              icon:"📑", sub:"Presentation decks" },
+  { id:"Executive Summary",       label:"Executive Summary",       icon:"🎯", sub:"C-suite ready" },
+  { id:"Migration Guide",         label:"Migration Guide",         icon:"🗺️", sub:"How-to migration" },
+  { id:"Technical Guide",         label:"Technical Guide",         icon:"🔧", sub:"Implementation guides" },
+  { id:"Integration Guide",       label:"Integration Guide",       icon:"🔗", sub:"Integration how-tos" },
+  { id:"Feature Brief",           label:"Feature Brief",           icon:"⭐", sub:"Specific feature focus" },
+  { id:"Infographic",             label:"Infographic",             icon:"🖼️", sub:"Visual explainers" },
+  { id:"Analyst Briefing",        label:"Analyst Briefing",        icon:"🏆", sub:"Analyst reports" },
+  { id:"Speaking Session",        label:"Speaking Session",        icon:"🎤", sub:"Conference talks" },
+];
+
+const STAGES = [
+  { id:"Exploring",   label:"Exploring" },
+  { id:"Evaluating",  label:"Evaluating" },
+  { id:"Negotiating", label:"Negotiating" },
+  { id:"Closing",     label:"Closing" },
+];
+
+const TYPE_COLORS = {
+  "Case Study":"#fef3c7","Competitive Comparison":"#e0e7ff","Battlecard":"#dbeafe",
+  "One-Pager":"#d1fae5","Datasheet":"#d1fae5","Solution Brief":"#ede9fe",
+  "Product Overview":"#e0f2fe","Technical Deep Dive":"#fce7f3",
+  "Whitepaper":"#ede9fe","E-book":"#f3e8ff","Blog / Thought Leadership":"#f0fdf4",
+  "Webinar / Video":"#fee2e2","Sales Deck":"#fef9c3","Executive Summary":"#fef9c3",
+  "Migration Guide":"#ffedd5","Technical Guide":"#ffedd5","Integration Guide":"#ffedd5",
+  "Feature Brief":"#ecfdf5","Infographic":"#fdf2f8","Analyst Briefing":"#fffbeb",
+  "Speaking Session":"#fdf4ff",
+};
+
+// ── EMBEDDED DATA ──────────────────────────────────────────────────────────────
+// To update: open data-converter.html, paste your exported CSV, click Convert,
+// copy the output, and replace everything between the [ ] brackets below.
+// ────────────────────────────────────────────────────────────────────────────────
+let ASSETS = [
+    {asset_name:"Flows Product Launch Brief",gdrive_url:"https://docs.google.com/document/d/1FpkUEuf0pLJ_XlCOo5jbdM_2B_rWU5ijnosnwUpvM4I/edit?usp=drivesdk",asset_type:"Product Overview",topic:["Workflow / Automation"],persona:["Technical","Manager"],stage:["Exploring","Evaluating"],notes:"A launch brief for \"Flows\" that explains the value proposition; great for introducing the concept to prospects."},
+  {asset_name:"Spacelift FedRAMP Launch Brief",gdrive_url:"https://docs.google.com/document/d/1b9u2LErA3WPoAfYYHeLRHqqsM2zOOOheBwndKPhEo18/edit?usp=drivesdk",asset_type:"Product Overview",topic:["Compliance","Security"],persona:["Executive","Manager"],stage:["Evaluating"],notes:"Specific brief on FedRAMP status; essential for public sector or highly regulated enterprise deals."},
+  {asset_name:"US Region - Product Launch Brief",gdrive_url:"https://docs.google.com/document/d/11gd48GJzJ7PfScJPM_VxhqZzUKXOc7yt9eRWIas1Eww/edit?usp=drivesdk",asset_type:"Product Overview",topic:["Scalability"],persona:["Technical","Manager"],stage:["Exploring","Evaluating"],notes:"Briefing on US-specific infrastructure availability to address data residency concerns."},
+  {asset_name:"Product Launch Brief - Decoupled Self-hosted",gdrive_url:"https://docs.google.com/document/d/15vesYSIQbEScyKq9I8toQHTdg1ZV5M3_E3nXilBeseg/edit?usp=drivesdk",asset_type:"Product Overview",topic:["Security","Scalability"],persona:["Technical"],stage:["Evaluating"],notes:"Details the launch of Private Workers; useful for customers requiring high security and on-prem execution."},
+  {asset_name:"ansibleOnePager",gdrive_url:"https://drive.google.com/file/d/1eSkmaJGpHlvySL6CvK3sfVaI8WYjzDKz/view?usp=drivesdk",asset_type:"Technical Deep Dive",topic:["Migration","Workflow / Automation"],persona:["Technical"],stage:["Evaluating"],notes:"Technical documentation for migrating to OpenTofu; vital for customers looking for Terraform alternatives."},
+  {asset_name:"Product Launch Brief Template",gdrive_url:"https://docs.google.com/document/d/1L2uCFZ82NCj9BF-YGZc195Genrr6A7ZqwYLOvhUohG4/edit?usp=drivesdk",asset_type:"Product Overview",topic:["Workflow / Automation"],persona:["Technical","Manager"],stage:["Exploring","Evaluating"],notes:"Briefing on ServiceNow integration; useful for larger enterprises with mature ITIL processes."},
+  {asset_name:"Spacelift Intelligence Overview Video",gdrive_url:"https://docs.google.com/document/d/1_r0B2-vOeCBMb9zuoIodYUuN_Lj91K321xKgkUkCLLw/edit?usp=drivesdk",asset_type:"Webinar / Demo",topic:[],persona:[],stage:[],notes:"Product video demonstrating dynamic tooling; highly effective for showing ease of use to engineers."},
+  {asset_name:"GAACS Brief - Spacelift Intelligence launch",gdrive_url:"https://docs.google.com/document/d/1jVSK5fAq2OmHBEjv_VhHMwnq1roQESlqIm09i9alSV0/edit?usp=drivesdk",asset_type:"Other",topic:[],persona:[],stage:[],notes:"Internal Only. This is an Ansible launch plan focused on internal milestones rather than sales messaging."},
+  {asset_name:"Intent GA Needs",gdrive_url:"https://docs.google.com/document/d/1Gwn_H8r6StZ42HUlqkYKEw_qY1bsF2qAF-OUZRUffl4/edit?usp=drivesdk",asset_type:"Sales Deck",topic:[],persona:[],stage:[],notes:"A pitch deck for the \"Flows\" launch; used to present the vision of automated IaC workflows."},
+  {asset_name:"Spacelift Intelligence \"Why\" LinkedIn carousel",gdrive_url:"https://docs.google.com/document/d/1jOXpLlHervUjGKmYKdUUsY73Xp3-qBaBiPBxw6ceTVc/edit?usp=drivesdk",asset_type:"Solution Brief",topic:[],persona:[],stage:[],notes:"Comparison and migration path for TFC users; strong for \"swap-out\" conversations."},
+  {asset_name:"Spacelift Intelligence Social Ideas and Initial Drafts",gdrive_url:"https://docs.google.com/document/d/1TFgrEORa9Af2tNzD9-b4TVL-72JWHq7Sg-UzpLnaPG4/edit?usp=drivesdk",asset_type:"Datasheet",topic:["AI / Intelligence","Workflow / Automation"],persona:["Technical","End-User"],stage:["Evaluating"],notes:"A deep dive into OPA (Open Policy Agent) support; key for the \"Governance\" sales pillar."},
+  {asset_name:"Spacelift Intelligence launch carousel",gdrive_url:"https://docs.google.com/document/d/1Fs0OM1e2ut1X_QruoEC4N276b8WstshuEzmH-UDjRZs/edit?usp=drivesdk",asset_type:"Sales Deck",topic:[],persona:[],stage:[],notes:"A customer success slide deck; useful as a template for showing long-term partnership value."},
+  {asset_name:"Spacelift Sales Deck [Mar 2026]",gdrive_url:"https://docs.google.com/presentation/d/1yH5bo3eFG94CCRsX5JiQps8hGU0HTD0yXCdFYu5sWEk/edit?usp=drivesdk",asset_type:"Webinar / Video",topic:["Workflow / Automation","Developer Experience"],persona:["Executive","Manager"],stage:["Evaluating","Closing"],notes:"Short social video clip; useful for LinkedIn or initial \"cold\" reach out to technical personas."},
+  {asset_name:"Spacelift Intelligence - Analyst Presentation",gdrive_url:"https://docs.google.com/presentation/d/1lhokzct1Md9fIpaJRwIzUMCpwVG1q_TAoY6Wosf7S-c/edit?usp=drivesdk",asset_type:"Product Overview",topic:["AI / Intelligence","Migration"],persona:["Manager","Executive"],stage:["Exploring","Evaluating"],notes:"Details on the AWS region launch; useful for confirming data residency for AWS-heavy prospects."},
+  {asset_name:"Draft Updated Message Pitch",gdrive_url:"https://docs.google.com/presentation/d/1XBTMrCpdphgoOnPOv3JeMFGSPemYJ0Jndlwy7LhH2fE/edit?usp=drivesdk",asset_type:"Internal / Operational",topic:["Governance","Security"],persona:["Technical","Manager"],stage:["Evaluating"],notes:"Internal Only. Contains notes from a launch sync; not customer-facing."},
+  {asset_name:"Intent tech preview: what did we learn? and Natalia Gazda - 2026/01/21 16:26 CET - Notes by Gemini",gdrive_url:"https://drive.google.com/file/d/1PMPr7mQxyX04CzfD0JVv2L0bGvNi1NDo/view?usp=drivesdk",asset_type:"Product Overview",topic:["Workflow / Automation","Pricing / ROI"],persona:["Executive","Manager"],stage:["Evaluating","Closing"],notes:"Detailed brief on FedRAMP Moderate controls; mandatory for federal agency sales."},
+  {asset_name:"NEWS // Spacelift Intelligence & GA of Spacelift Intent",gdrive_url:"https://docs.google.com/document/d/1sQtmJCPviJj9lDWYT-UKvsu-Cnt-AD_6KPoL3XcDiGw/edit?usp=drivesdk",asset_type:"Webinar / Video",topic:[],persona:[],stage:[],notes:"Demo video of \"Flows\" in action; helps validate the technical requirement during a POC."},
+  {asset_name:"WORKBACK PLAN // Intent GA",gdrive_url:"https://drive.google.com/file/d/1SpwlxgtDvRhtZMvYO1aWh_37gXInUCw6/view?usp=drivesdk",asset_type:"Sales Deck",topic:[],persona:[],stage:[],notes:"Presentation for partner enablement; useful for training resellers but not for direct customer sales."},
+  {asset_name:"Performance Readout - Terragrunt (March 2026)",gdrive_url:"https://docs.google.com/presentation/d/1nPeOO-rK5_Mfq0rmFTuIlhEatN4rZ-ef_jodgymWqHU/edit?usp=drivesdk",asset_type:"Competitive Comparison",topic:[],persona:[],stage:[],notes:"Document outlining the competitive edge against Terraform Cloud; very high sales value for re-evaluating incumbents."},
+  {asset_name:"Performance data - Email marketing - Terragrunt",gdrive_url:"https://docs.google.com/spreadsheets/d/1THIH7Tx4WPWkHhQbylnpxTu4n8l6ta0NCo2KUOcviLw/edit?usp=drivesdk",asset_type:"Technical Deep Dive",topic:["Workflow / Automation","Developer Experience"],persona:["Technical","End-User"],stage:["Evaluating"],notes:"A technical guide on implementing OPA; helps architects understand how to enforce compliance rules."},
+  {asset_name:"Spacelift Marketing Project Brief (GACCS) - Terragrunt",gdrive_url:"https://docs.google.com/document/d/1XzKvwT9ApkOcnvFouGnY4s4wjxTWVCewXbU-y332AjM/edit?usp=drivesdk",asset_type:"Solution Brief",topic:["Scalability","Workflow / Automation"],persona:["Executive","Manager"],stage:["Exploring","Evaluating"],notes:"High-level brief on governing AWS environments; used to show Spacelift's value in a multi-account AWS setup."},
+  {asset_name:"Introducing Spacelift Plugins: Extensibility Meets Infrastructure as Code",gdrive_url:"https://docs.google.com/document/d/1Qm5k4olRs7kBJiERKgLtzcHoQtJEfIs9vZR7rFdsf4A/edit?usp=drivesdk",asset_type:"Internal / Operational",topic:[],persona:[],stage:[],notes:"Internal Only. Logistical plan for the AWS Region launch."},
+  {asset_name:"Current Challenges and Issues",gdrive_url:"https://docs.google.com/document/d/1c8DTbkBKPwSBZ2Cqq3SY0UIM92_jcbkqWbosKlBjIwo/edit?usp=drivesdk",asset_type:"Webinar / Demo",topic:[],persona:[],stage:[],notes:"Demo video showing the ServiceNow spoke; vital for enterprises wanting to integrate IaC with ITSM."},
+  {asset_name:"Features to Benefits Mapping",gdrive_url:"https://docs.google.com/document/d/1ACOO-cec0j3sjRsHwxlhT64odWHfH74Ax2DMIQjWdzk/edit?usp=drivesdk",asset_type:"Sales Deck",topic:[],persona:[],stage:[],notes:"Comparative deck highlighting the benefits of OpenTofu; powerful for prospects concerned about license changes."},
+  {asset_name:"Use Cases",gdrive_url:"https://docs.google.com/document/d/19s3uGfEQ5AS4UwUIl0ENkPTWs2TtZW3U2uxeYZujPLA/edit?usp=drivesdk",asset_type:"Technical Deep Dive",topic:["Compliance","Security"],persona:["Manager","Executive"],stage:["Evaluating"],notes:"Step-by-step migration document; provides confidence to technical teams during a vendor switch."},
+  {asset_name:"Customers top 6 pain points",gdrive_url:"https://docs.google.com/document/d/1E2BUb9ra2YtrSOoAcK-of2lzpgQHMRkqHEiZFSX8WVo/edit?usp=drivesdk",asset_type:"Other",topic:["Workflow / Automation"],persona:["Technical","End-User"],stage:["Evaluating"],notes:"Internal social media rollout plan; low direct value for a sales conversation."},
+  {asset_name:"Spacelift Flows - Sales Deck",gdrive_url:"https://docs.google.com/presentation/d/13S9pt5cuuV-gHN71-awCLNK_Eck00ubveQ2Rv-jzAMw/edit?usp=drivesdk",asset_type:"Product Overview",topic:[],persona:[],stage:[],notes:"Brief explaining the Private Worker architecture; helps address security/data residency requirements."},
+  {asset_name:"Flows Speed Sales Deck Recording.webm",gdrive_url:"https://drive.google.com/file/d/1Jfk9nmdXNzEO6fYKyfPW6FnLqWhHA9DM/view?usp=drivesdk",asset_type:"Internal / Operational",topic:["Cost Optimization","Migration"],persona:["Manager","Executive"],stage:["Evaluating","Negotiating"],notes:"Internal Only. Spreadsheet for launch event expenses."},
+  {asset_name:"Flows Overview - Internal",gdrive_url:"https://docs.google.com/presentation/d/1QLbpyrTrxIJYwusvIqF9Rlsz41z6goOU0j-xGFpOYpA/edit?usp=drivesdk",asset_type:"Solution Brief",topic:["Governance","Workflow / Automation"],persona:["Technical"],stage:["Evaluating"],notes:"Strategic document for TFC users; outlines why and how to move to Spacelift."},
+  {asset_name:"n8n key messages and sense of urgency messaging",gdrive_url:"https://docs.google.com/document/d/1PKS9vbssPBIhRcCPmkjjvKCLVvvIOg8KBVKKNTMUuTE/edit?usp=drivesdk",asset_type:"Datasheet",topic:[],persona:[],stage:[],notes:"Feature sheet for Azure-specific integrations; helpful for Azure-primary shops."},
+  {asset_name:"Tines Key Messages and Urgency Messaging",gdrive_url:"https://docs.google.com/document/d/1880MxMtOVh6ox-guf_VEmHDyTRGp8_4XsC1zC_s8uWk/edit?usp=drivesdk",asset_type:"Webinar / Demo",topic:["Governance","Workflow / Automation"],persona:["Manager"],stage:["Exploring","Evaluating"],notes:"Short video clip showing the \"Stacks\" UI; good for visual engagement in early emails."},
+  {asset_name:"Key customer quotes and snippets on security and governance",gdrive_url:"https://docs.google.com/document/d/1qZhB2UmYKtS2foEX7gXCf7lFbfVUapYnl4BhItnCJrM/edit?usp=drivesdk",asset_type:"Internal / Operational",topic:[],persona:[],stage:[],notes:"Internal Only. Schedule for booth staffing at a launch event."},
+  {asset_name:"DevOps Automation Scripting Risk Statistics.docx",gdrive_url:"https://docs.google.com/document/d/1RS6OT4CmnvcU5UjgmmleqRhSq-4BDXwm/edit?usp=drivesdk&ouid=102920102295700585238&rtpof=true&sd=true",asset_type:"Product Overview",topic:[],persona:[],stage:[],notes:"Launch document for Drift Detection; key for maintaining IaC integrity."},
+  {asset_name:"Industry Topic Trends.docx",gdrive_url:"https://docs.google.com/document/d/1pcQBSDL7u8W6_y8InAciy2zroTjL8oTX/edit?usp=drivesdk&ouid=102920102295700585238&rtpof=true&sd=true",asset_type:"Sales Deck",topic:[],persona:[],stage:[],notes:"Standardized deck for Executive Business Reviews; helps sales show realized value to current customers."},
+  {asset_name:"Defining the Automation Gap.docx",gdrive_url:"https://docs.google.com/document/d/1mGW79kh6tbfgR8kPEQGerA9pGJHLXTVK/edit?usp=drivesdk&ouid=102920102295700585238&rtpof=true&sd=true",asset_type:"Other",topic:["Workflow / Automation"],persona:["Technical","Manager"],stage:["Evaluating"],notes:"Internal repository of executive quotes for press releases; low sales value."},
+  {asset_name:"Flows Labs: GitHub Issue Triggers Slack Alert",gdrive_url:"https://docs.google.com/document/d/1nRguUArDFOE7l25nDEbhrdoWdY5th9oRIw9gjfsQz7M/edit?usp=drivesdk",asset_type:"Technical Deep Dive",topic:["Migration","Developer Experience"],persona:["Manager","Executive"],stage:["Evaluating","Closing"],notes:"Best practices guide for GitOps; positions Spacelift as a thought leader in modern delivery."},
+  {asset_name:"Heads up Slack Notification for JBTD Nav",gdrive_url:"https://docs.google.com/document/d/1VQhJllV3iD-bPEGW3fAUgQ52d8_u1Z28miJsfD48KuA/edit?usp=drivesdk",asset_type:"Solution Brief",topic:["Migration","Technical Deep Dive"],persona:["Technical"],stage:["Evaluating"],notes:"Focuses on Google Cloud Platform use cases; situational for GCP-heavy accounts."},
+  {asset_name:"Spacelift Intent - Sales Deck",gdrive_url:"https://docs.google.com/presentation/d/16en1nwAAW5K061P-TJDVLt7uFogS3ahgG3WeN5UVoqg/edit?usp=drivesdk",asset_type:"Internal / Operational",topic:[],persona:[],stage:[],notes:"Internal Only. Hiring questions for a product launch manager role."},
+  {asset_name:"Spacelift Intent Announcement Email",gdrive_url:"https://docs.google.com/document/d/1IG2bOJtb65JIPTzLQk9_b-jrOvNvxW7j4MamW_fS1u0/edit?usp=drivesdk",asset_type:"Webinar / Demo",topic:[],persona:[],stage:[],notes:"Recorded demo specifically showing Rego/OPA policy enforcement."},
+  {asset_name:"TFiR Interview Guide: Spacelift Intent",gdrive_url:"https://docs.google.com/document/d/1R3OEjGFr1bIvtqn0zAfNX2ZZSK0i-C4bTy_JruugCHw/edit?usp=drivesdk",asset_type:"Sales Deck",topic:[],persona:[],stage:[],notes:"Updated core pitch deck including the latest product launches (Flows, OpenTofu)."},
+  {asset_name:"Video Ideas",gdrive_url:"https://docs.google.com/document/d/1k0KNqTSxApfHie3u-nymF3ZeuqZzspLV1fz4_WrNLxU/edit?usp=drivesdk",asset_type:"Product Overview",topic:[],persona:[],stage:[],notes:"Briefing on the \"Moderate\" impact level authorization; critical for gov-sector deals."},
+  {asset_name:"Sign-up process",gdrive_url:"https://docs.google.com/document/d/11NoJqousJ6B543qLyRZjGRlgwv5bhccvJErLCFYYsq0/edit?usp=drivesdk",asset_type:"Internal / Operational",topic:[],persona:[],stage:[],notes:"Internal Only. Raw transcript of a launch planning meeting."},
+  {asset_name:"Marcin Blog Post",gdrive_url:"https://drive.google.com/file/d/1yvDnn1_roLNGVd16kRsbBN1Jy_Oq46Uo/view?usp=drivesdk",asset_type:"Case Study",topic:["Developer Experience","Workflow / Automation"],persona:["Technical","End-User"],stage:["Evaluating","Negotiating"],notes:"Real-world example of Spacelift speeding up delivery; provides social proof during POC."},
+  {asset_name:"[Draft] Spacelift Intent Landing Page",gdrive_url:"https://docs.google.com/document/d/1mds3MB56JFsKqqNRzh-whXiOcERQEUynPH-Mf4N9Y8k/edit?usp=drivesdk",asset_type:"Case Study",topic:[],persona:[],stage:[],notes:"Shows how Spacelift helped a client audit and reduce orphaned resources."},
+  {asset_name:"Spacelift Intent Technical Enablement - 2025/10/07 16:25 CEST - Recording",gdrive_url:"https://drive.google.com/file/d/1US7viVyWjheqlKeb7erbWA58RnIfaqQw/view?usp=drivesdk",asset_type:"Internal / Operational",topic:[],persona:[],stage:[],notes:"Internal Only. Tracking list for marketing permission logos."},
+  {asset_name:"Spacelift Intent Enablement - 2025/10/06 10:54 EDT - Chat",gdrive_url:"https://docs.google.com/document/d/1mxA0kO1lo2eFdXPnJzfUM12A_58mXkLjm3BsWvSxwHs/edit?usp=drivesdk",asset_type:"Webinar / Video",topic:[],persona:[],stage:[],notes:"Snippet from a podcast on IaC; situational for social sharing."},
+  {asset_name:"Intent One Pager - EXTERNAL.pdf",gdrive_url:"https://drive.google.com/file/d/12tbALnHALX3kXMF9I1ClHxKtiDAI2dhr/view?usp=drivesdk",asset_type:"Product Overview",topic:["Developer Experience","Workflow / Automation"],persona:["Technical","Manager"],stage:["Evaluating","Negotiating"],notes:"Brief on the ServiceNow integration; helpful for enterprise ITSM conversations."},
+  {asset_name:"Spacelift Intent - Introduction",gdrive_url:"https://docs.google.com/presentation/d/1YjhxUT5vd6kaLH4OcvkrmxJvSgEaNHc-f0vW1hKxqPo/edit?usp=drivesdk",asset_type:"Internal / Operational",topic:["Migration","Workflow / Automation"],persona:["Manager","Executive"],stage:["Exploring","Evaluating"],notes:"Internal Only. Logistics for event swag."},
+  {asset_name:"Spacelift Intent Enablement - 2025/10/06 10:54 EDT - Recording",gdrive_url:"https://drive.google.com/file/d/1QLUlNfaG3Ur5Kc-Hsf8reHJaWt2FZ62K/view?usp=drivesdk",asset_type:"Datasheet",topic:["Developer Experience","Workflow / Automation"],persona:["Technical","End-User"],stage:["Evaluating"],notes:"Specific feature sheet for Bitbucket users; helps clear technical hurdles."},
+  {asset_name:"Spacelift Intent Enablement - 2025/10/06 10:54 EDT - Chat",gdrive_url:"https://drive.google.com/file/d/1dG1vFHJ1qIoviHgNeqbDqaQS2JrUIoYU/view?usp=drivesdk",asset_type:"Webinar / Video",topic:["Developer Experience","Workflow / Automation"],persona:["Technical","End-User"],stage:["Evaluating"],notes:"Guided walkthrough for setting up Spacelift on AWS."},
+  {asset_name:"Cloude Posse Podcast Pitch",gdrive_url:"https://docs.google.com/document/d/1Mh66Qq_l8zCUdWEbYSKJcWpkLBaLWK8S8mzacMWmWXE/edit?usp=drivesdk",asset_type:"Technical Deep Dive",topic:[],persona:[],stage:[],notes:"Technical guide on advanced deployment strategies using Spacelift."},
+  {asset_name:"LI Newsletter Write-Up",gdrive_url:"https://docs.google.com/document/d/16kNzAFUYwxgFgP_YZ7hrpFLrb0L7Fsy_MT88cY8qfP8/edit?usp=drivesdk",asset_type:"Internal / Operational",topic:["Governance","Security"],persona:["Manager","Executive"],stage:["Evaluating","Negotiating"],notes:"Internal Only. Notes from a design review."},
+  {asset_name:"Published Links",gdrive_url:"https://docs.google.com/document/d/1Sk5LvUpbTJ0ssEFRG05QMAARR0W7x5mrTDzRF5xcU-w/edit?usp=drivesdk",asset_type:"Other",topic:["Governance","Workflow / Automation"],persona:["Technical","Manager"],stage:["Evaluating"],notes:"Pre-launch announcement text; low sales utility."},
+  {asset_name:"Intent - 4 Steps Video - HD 1080p.mp4",gdrive_url:"https://drive.google.com/file/d/1PrcszXkGM6KP54rQ2HLz_p5x5XPmYJTh/view?usp=drivesdk",asset_type:"Solution Brief",topic:["Workflow / Automation"],persona:["Manager","Executive"],stage:["Evaluating","Closing"],notes:"High-level overview of managing AWS, Azure, and GCP simultaneously."},
+  {asset_name:"Intent - Policy Video - HD 1080p.mp4",gdrive_url:"https://drive.google.com/file/d/10cZelG5DXR9uTWQS1GXDzUtxhdajXk6D/view?usp=drivesdk",asset_type:"Sales Deck",topic:["Developer Experience","Workflow / Automation"],persona:["Technical"],stage:["Evaluating"],notes:"Deck specifically for resellers/partners to pitch Spacelift."},
+  {asset_name:"Intent Early Access Activation - Email / Social Copy",gdrive_url:"https://docs.google.com/document/d/14ReBJVVzJ-0IPhIFMJngDMtBAKShuyCPd6DBzJiWl2M/edit?usp=drivesdk",asset_type:"Product Overview",topic:[],persona:[],stage:["Evaluating"],notes:"General flyer for a new feature launch."},
+  {asset_name:"Intent-Email-DriftDetection.mp4",gdrive_url:"https://drive.google.com/file/d/1mFM7YLWFcDK5qg-DMB0iPYTUIQ6UbqWw/view?usp=drivesdk",asset_type:"Internal / Operational",topic:[],persona:[],stage:["Exploring","Evaluating"],notes:"Internal Only. Timeline for launch activities."},
+  {asset_name:"Intent-Email-ASM.mp4",gdrive_url:"https://drive.google.com/file/d/1XEAkE9Su5O9pU8PK_y0ursgqsc_pFhvi/view?usp=drivesdk",asset_type:"Blog / Thought Leadership",topic:["Workflow / Automation","Developer Experience"],persona:["Technical"],stage:["Evaluating","Closing"],notes:"Thought piece on the evolution of IaC; good for top-of-funnel engagement."},
+  {asset_name:"Intent-Email-Unmanaged.mp4",gdrive_url:"https://drive.google.com/file/d/1Dw9Ls6tAHncuAfNmAzVE0LFUKTmGMq8T/view?usp=drivesdk",asset_type:"Webinar / Demo",topic:["Governance","Workflow / Automation"],persona:["Manager"],stage:["Evaluating"],notes:"Recorded deep-dive session for power users."},
+  {asset_name:"Intent-Email-ConnectMCP.mp4",gdrive_url:"https://drive.google.com/file/d/12vpj4ggmm9A_sMTWR2aF2o_FNcLU2G06/view?usp=drivesdk",asset_type:"Case Study",topic:[],persona:[],stage:[],notes:"Case study focusing on audit and compliance results."},
+  {asset_name:"Intent-Email-CreateDelete.mp4",gdrive_url:"https://drive.google.com/file/d/1_igmjUt5yE9rJ8241-gBRA-hyRwUL0oM/view?usp=drivesdk",asset_type:"Internal / Operational",topic:[],persona:[],stage:[],notes:"Internal Only. Notes from a competitive analysis sync."},
+  {asset_name:"Intent-Email-ASM.mp4",gdrive_url:"https://drive.google.com/file/d/1LJ_BAbMQgKvoYJCGuTXQKL-rQO1nV41K/view?usp=drivesdk",asset_type:"Competitive Comparison",topic:[],persona:[],stage:[],notes:"Competitive breakdown; essential for \"head-to-head\" deals."},
+  {asset_name:"Intent-Email-ConnectMCP-Claude.mp4",gdrive_url:"https://drive.google.com/file/d/1UJkXXpen-vER0hhqXxWVlSk3XuVTy9hW/view?usp=drivesdk",asset_type:"Sales Deck",topic:[],persona:[],stage:[],notes:"Slide deck used to guide a live product demonstration."},
+  {asset_name:"Pawel H LinkedIn Post for 10-10-25",gdrive_url:"https://docs.google.com/document/d/1hsl8iRG2diw_w6pRMM1jm8no3vf8ic3bXXEuMO1_wlM/edit?usp=drivesdk",asset_type:"Internal / Operational",topic:[],persona:[],stage:[],notes:"Internal Only. Raw recording transcript."},
+  {asset_name:"Reddit Post",gdrive_url:"https://docs.google.com/document/d/1KMWXjc3-yhjemm0J7w0VZtV0GSoVxN5QKTZvndS6S20/edit?usp=drivesdk",asset_type:"Product Overview",topic:[],persona:[],stage:[],notes:"Details on the managed OpenTofu service; high relevance given market shifts."},
+  {asset_name:"Hacker News",gdrive_url:"https://docs.google.com/document/d/142y7umjZgXG1vNXlbNBxK1S5aXjjI_16IbjxiHAAV24/edit?usp=drivesdk",asset_type:"Technical Deep Dive",topic:[],persona:[],stage:[],notes:"Guide on using the Spacelift API for custom integrations."},
+  {asset_name:"Intent Carousel Top Copy",gdrive_url:"https://docs.google.com/document/d/15vgxq-Ud_qC5QkguFe43KNLbivJ_I_rDHQzcQhywPwM/edit?usp=drivesdk",asset_type:"Internal / Operational",topic:["Workflow / Automation","AI / Intelligence"],persona:["Executive","Manager"],stage:["Evaluating","Closing"],notes:"Internal Only. Statement of Work template for services."},
+  {asset_name:"AAC Demo.mp4",gdrive_url:"https://drive.google.com/file/d/1FRDzOT2IoeWrHRgk74EZVzf7K2solF7s/view?usp=drivesdk",asset_type:"Webinar / Video",topic:["AI / Intelligence","Workflow / Automation"],persona:["Technical","End-User"],stage:["Evaluating"],notes:"High-production teaser video for a major product launch."},
+  {asset_name:"Flows FAQ",gdrive_url:"https://docs.google.com/document/d/1Ns1gDaQpRIW28RGblTjg8GWE22RDX3Dr3FKW8LeH_CI/edit?usp=drivesdk",asset_type:"Solution Brief",topic:["AI / Intelligence","Developer Experience"],persona:["Executive","Manager"],stage:["Evaluating"],notes:"Brief on managing K8s clusters through Spacelift."},
+  {asset_name:"Flows Beta 4-page overview.pdf",gdrive_url:"https://drive.google.com/file/d/1Hv328oRv1hnKjGqB0wPhvWF7qRTExaAU/view?usp=drivesdk",asset_type:"Internal / Operational",topic:["Compliance","Security"],persona:["Executive","Manager"],stage:["Evaluating","Negotiating"],notes:"Internal Only. Q3 marketing spend analysis."},
+  {asset_name:"Original Product Manager Flows Launch Brief in Notion",gdrive_url:"https://docs.google.com/document/d/1iTgqh1zBCHoXwKkhf1SSQPN4SR7MOErUsQQkS_58ka4/edit?usp=drivesdk",asset_type:"Blog / Thought Leadership",topic:["Developer Experience"],persona:["Technical","End-User"],stage:["Evaluating","Negotiating"],notes:"Informational article on the benefits of the OpenTofu project."},
+  {asset_name:"Flows vs n8n Battlecard Link and Text",gdrive_url:"https://docs.google.com/document/d/1fANCwfpEJiWp3_jjI56KTNYaAvQ3s95WpT-JEADKYko/edit?usp=drivesdk",asset_type:"Sales Deck",topic:["Developer Experience","Workflow / Automation"],persona:["Technical","End-User"],stage:["Evaluating"],notes:"Specialized deck focusing on Spacelift's security posture (SSO, RBAC, OPA)."},
+  {asset_name:"Flows Rewrite - n8n style",gdrive_url:"https://docs.google.com/document/d/19WX191FAC79CWqoD4CJJwcKoK03yH6vXLaaRucrX_CM/edit?usp=drivesdk",asset_type:"Case Study",topic:["AI / Intelligence","Developer Experience"],persona:["Technical","Manager"],stage:[],notes:"Real-world validation of the drift detection feature."},
+  {asset_name:"FLows Before and After Slide",gdrive_url:"https://docs.google.com/document/d/1od5fJecRnKl8YKwca7DXfWiIv9AskKBoiMvfTDCk-to/edit?usp=drivesdk",asset_type:"Internal / Operational",topic:["AI / Intelligence","Workflow / Automation"],persona:["Technical"],stage:[],notes:"Internal Only. Recruiting schedule for the PMM team."},
+  {asset_name:"Flows Deck Outline and Speaker Notes - Buyer Confidence Framework",gdrive_url:"https://docs.google.com/document/d/1sUE-GGC_XQ1qp7h76dLQOUF8xzQARXNupWfhCVbm5uI/edit?usp=drivesdk",asset_type:"Technical Deep Dive",topic:["Workflow / Automation"],persona:["Technical"],stage:["Evaluating"],notes:"A deep dive into Spacelift Provider setup; essential for technical buyers automating their Spacelift instance."},
+  {asset_name:"Process and Wants - XYB - Cariad - Uniper",gdrive_url:"https://docs.google.com/document/d/1q092nq4QKSPTlnyv4p0Q_Lz3xokv3h63TTECe0B4Sj0/edit?usp=drivesdk",asset_type:"Solution Brief",topic:["Scalability","Governance"],persona:["Technical","Manager"],stage:["Exploring","Evaluating"],notes:"Brief on managing Azure Landing Zones; valuable for enterprises migrating to or expanding on Azure."},
+  {asset_name:"Process and Wants - Depop - Unitary - Lokalise",gdrive_url:"https://docs.google.com/document/d/14BxX_FXYNwKOK0AmYMIFlaVZcQoD3xoSzZ5d1Kyq_9A/edit?usp=drivesdk",asset_type:"Internal / Operational",topic:[],persona:[],stage:[],notes:"Internal Only. Visual roadmap for marketing team deliverables; no sales utility."},
+  {asset_name:"Call Assessment - Mentions across all calls",gdrive_url:"https://docs.google.com/document/d/1cqiC61MrmQMynn5yHbgihClOJaGbbPDPErIkV3ooW9I/edit?usp=drivesdk",asset_type:"Webinar / Demo",topic:["Workflow / Automation"],persona:["Technical"],stage:["Evaluating"],notes:"Video showing how to chain multiple stacks together; great for showing advanced orchestration."},
+  {asset_name:"ChatGPT: Customer Pain & Benefit Frequency Summary",gdrive_url:"https://docs.google.com/document/d/1qinlJgoyCbxK8OviaQJr31yhSO9WIyFSYb70QGCUIQ0/edit?usp=drivesdk",asset_type:"Sales Deck",topic:["Pricing / ROI","Scalability"],persona:["Executive","Manager"],stage:["Negotiating","Closing"],notes:"Short \"executive summary\" deck designed to be shared with busy stakeholders for final sign-off."},
+  {asset_name:"ChatGPT: Bloomberg-GHGSat-Tipalti-DwayneHolmes",gdrive_url:"https://docs.google.com/document/d/1jHtiQ4oOfvjTmhkN950hvQaI07lq7WY9--jy3-lCxXI/edit?usp=drivesdk",asset_type:"Datasheet",topic:["Workflow / Automation"],persona:["Technical"],stage:["Evaluating"],notes:"Specific feature sheet for GHE integration; helpful for clearing technical requirements."},
+  {asset_name:"ChatGPT: One Zero-PayFit-Marigold",gdrive_url:"https://docs.google.com/document/d/1NP6bo4Fb3kXLKAOeWbO0C_1BGh0tOK-_dhRi6pN8kBg/edit?usp=drivesdk",asset_type:"Internal / Operational",topic:[],persona:[],stage:[],notes:"Internal Only. Spreadsheet for launch campaign costs."},
+  {asset_name:"ChatGPT: XYB-Cariad-Uniper",gdrive_url:"https://docs.google.com/document/d/1KPynPwWmWVfKrXUPNn1dVXQqolT_m6Rg8ZiTvDZzZ7A/edit?usp=drivesdk",asset_type:"Product Overview",topic:["Workflow / Automation"],persona:["Technical","Manager"],stage:["Exploring","Evaluating"],notes:"High-level brief for the Cloud Control feature; useful for prospects wanting native cloud API access."},
+  {asset_name:"ChatGPT: Depop-Unitary-Lokalise",gdrive_url:"https://docs.google.com/document/d/1trdnhFnSEvXkQn5zAUPCzUesY-2ENAWhLMQl99KQ8E0/edit?usp=drivesdk",asset_type:"Case Study",topic:["Workflow / Automation","Cost Optimization"],persona:["Manager","Executive"],stage:["Evaluating","Negotiating"],notes:"Customer story focusing on how OPA reduced manual review tickets; strong social proof for the governance use case."},
+  {asset_name:"ChatGPT: Vast-DNA Nexus-Nuvibit",gdrive_url:"https://docs.google.com/document/d/1OiWiJIRUInGuwm2Gf6AeM466USUJRzuPKOSksMIiTsM/edit?usp=drivesdk",asset_type:"Webinar / Video",topic:["Developer Experience"],persona:["Technical","End-User"],stage:["Exploring"],notes:"Short \"hype\" video for a new UI launch; good for early-stage social engagement."},
+  {asset_name:"ChatGPT: Novibet-Synerise-Attentive",gdrive_url:"https://docs.google.com/document/d/1sUGPpKeak5k-n_M_MznFrzSpJ_TU3n5EJcOnjJ0rM-w/edit?usp=drivesdk",asset_type:"Technical Deep Dive",topic:["Security","Scalability"],persona:["Technical"],stage:["Evaluating"],notes:"Documentation on setting up private workers/runners in highly restricted environments."},
+  {asset_name:"Claude: Dwayne Holmes",gdrive_url:"https://docs.google.com/document/d/1XBRhhbc4mDkYnC5kSEzLXGoqOrEBUhcE6OixDjZ2LHw/edit?usp=drivesdk",asset_type:"Internal / Operational",topic:[],persona:[],stage:[],notes:"Internal Only. Coordination list for PMM and PR teams."},
+  {asset_name:"Claude: GhGsat",gdrive_url:"https://docs.google.com/document/d/1odRRdq9OoFjl-i72bHdahAC6pim2W-uYnhGPSstWEHg/edit?usp=drivesdk",asset_type:"Competitive Comparison",topic:["Workflow / Automation"],persona:["Manager","Technical"],stage:["Evaluating","Negotiating"],notes:"Competitive breakdown against Harness; critical for head-to-head enterprise deals."},
+  {asset_name:"Claude: Lokalise",gdrive_url:"https://docs.google.com/document/d/1JMtVnkb-Yp10o8grhJ4Up5GA7c6_cZec1A6tmhK3ifk/edit?usp=drivesdk",asset_type:"Sales Deck",topic:["Workflow / Automation"],persona:["Technical","Manager"],stage:["Evaluating"],notes:"Presentation used to set goals and success criteria for a technical pilot."},
+  {asset_name:"Claude: Day zero - pay fit - marigold",gdrive_url:"https://docs.google.com/document/d/13kWT2oUVHTGwslek1VkcIzzqnxPaePN1EKh-0pfCLV8/edit?usp=drivesdk",asset_type:"Product Overview",topic:["Workflow / Automation"],persona:["Technical"],stage:["Evaluating"],notes:"Briefing on using Spacelift with external state; addresses technical hurdles for migrated workloads."},
+  {asset_name:"Claude: GhGsat - Dwayne",gdrive_url:"https://docs.google.com/document/d/1XesmNJDYT5a90hhg3qL_wzIOHT0Nd13bMDD8-M0ZT58/edit?usp=drivesdk",asset_type:"Internal / Operational",topic:[],persona:[],stage:[],notes:"Internal Only. Raw notes from a feature design session."},
+  {asset_name:"Claude: Vast-DNA Nexus-Nuvibit",gdrive_url:"https://docs.google.com/document/d/1WaCvpfu_B5tlTqqUlSRa2SX-326xJpU1SO_UTMPRxDQ/edit?usp=drivesdk",asset_type:"Solution Brief",topic:["Compliance","Security"],persona:["Manager","Executive"],stage:["Evaluating"],notes:"A brief tailored for Fintech/Banking; focuses on audit trails and SOC2 alignment."},
+  {asset_name:"Claude: Tipalti",gdrive_url:"https://docs.google.com/document/d/1F6m3G2-vn_PK1yk_RNCXLLwa2BtNx6TCWVw089FMnmg/edit?usp=drivesdk",asset_type:"Webinar / Demo",topic:["Governance","Compliance"],persona:["Technical","End-User"],stage:["Exploring","Evaluating"],notes:"Screencast showing how to write and test Rego policies in the UI."},
+  {asset_name:"Claude: Bloomberg",gdrive_url:"https://docs.google.com/document/d/1PMVkxZcSWop7vWXLbks8x7rVunp8UcbS_DgUmAHV9jU/edit?usp=drivesdk",asset_type:"Other",topic:[],persona:[],stage:[],notes:"Internal repository of executive quotes for launches."},
+  {asset_name:"Claude: XYB - Cariad - Uniper",gdrive_url:"https://docs.google.com/document/d/1VbfSpKgInNmoaj4LYL0tpeYr4pRrl7jNs-uNa6Gq3kE/edit?usp=drivesdk",asset_type:"Technical Deep Dive",topic:["Workflow / Automation","Developer Experience"],persona:["Technical"],stage:["Evaluating"],notes:"Guide on using multiple versions of Terraform/OpenTofu simultaneously; solves a major engineering pain point."},
+  {asset_name:"Claude: Unitary",gdrive_url:"https://docs.google.com/document/d/1v5Byi7ZoWe3Fulod19QeY7Tr3-TyE3igVj1ZBVwMv2k/edit?usp=drivesdk",asset_type:"Sales Deck",topic:["Security","Compliance"],persona:["Executive","Manager"],stage:["Evaluating"],notes:"Specialized slides focusing on Spacelift's security architecture (OIDC, private workers)."},
+  {asset_name:"Claude: Depop",gdrive_url:"https://docs.google.com/document/d/1s-ZnMBEwv_TAVjmyMVITkrj3nDrMKgyAbGH3SsHaysY/edit?usp=drivesdk",asset_type:"Internal / Operational",topic:[],persona:[],stage:[],notes:"Internal Only. Raw transcript of a technical deep-dive recording."},
+  {asset_name:"GHGSat IncSpacelift Flows Demo",gdrive_url:"https://docs.google.com/document/d/1d9XdISx2MbDc30qhlPqL-2Yt7Sbwh44AafDFrMOXvMY/edit?usp=drivesdk",asset_type:"Product Overview",topic:["Developer Experience"],persona:["End-User","Technical"],stage:["Exploring"],notes:"One-pager promoting the updated Spacelift user interface."},
+  {asset_name:"Gong Calls - Tipalti",gdrive_url:"https://docs.google.com/document/d/1zJXdrKGSg59_eOk5fqDZy3DQsWy56O8aAxhFZiurCTg/edit?usp=drivesdk",asset_type:"Marketing Content",topic:["Developer Experience"],persona:["Manager","Executive"],stage:["Exploring"],notes:"Compilation of customer quotes; good for early \"brand trust\" building."},
+  {asset_name:"Gong Call - Picnic - Mirai Risk Tech - Dataminr",gdrive_url:"https://docs.google.com/document/d/1zqxew2YKLs0gVx8iwFgxwHYwNdHuOhyb8FFXvubZ-XY/edit?usp=drivesdk",asset_type:"Case Study",topic:["Workflow / Automation","Scalability"],persona:["Manager","Executive"],stage:["Evaluating","Negotiating"],notes:"Final PDF version of the Kin case study; high-value social proof."},
+  {asset_name:"Gong Call - XYB - Cariad - Uniper",gdrive_url:"https://docs.google.com/document/d/1GUX0do4yQgHhLVxOY5EI2dmpMcowkK6OaeLESGhBb1Y/edit?usp=drivesdk",asset_type:"Internal / Operational",topic:[],persona:[],stage:[],notes:"Internal Only. Document on how to update custom GPTs with case study data."},
+  {asset_name:"Gong Calls - Novibet - Synerise - Attentive Mobile",gdrive_url:"https://docs.google.com/document/d/1S64ka3hk8drJad5xpogMROcLBSQYm5NSs5WAXJfpsV8/edit?usp=drivesdk",asset_type:"Technical Deep Dive",topic:["Security","Workflow / Automation"],persona:["Technical"],stage:["Evaluating"],notes:"Deep dive into the GitLab webhook and OIDC authentication flow."},
+  {asset_name:"Links to YouTube Videos",gdrive_url:"https://docs.google.com/document/d/1dZgiZ4kVS5C4qAT21hdJj58ixmTn2__4TmiX4MiwAUo/edit?usp=drivesdk",asset_type:"Sales Deck",topic:["Scalability","Workflow / Automation"],persona:["Executive","Manager"],stage:["Evaluating"],notes:"The latest version of the core enterprise deck; includes 2026 roadmap items."},
+  {asset_name:"webhook.yaml",gdrive_url:"https://drive.google.com/file/d/1R5eB8luhI-y-j6JuVj5fKtRSfYgWFjPn/view?usp=drivesdk",asset_type:"Internal / Operational",topic:[],persona:[],stage:[],notes:"Internal Only. Template for professional services engagements."},
+  {asset_name:"pagerduty.yaml",gdrive_url:"https://drive.google.com/file/d/1zxSeGFKh7x6TRoNeVVv44Jl55md1CKj7/view?usp=drivesdk",asset_type:"Product Overview",topic:["Compliance","Security"],persona:["Executive","Manager"],stage:["Evaluating"],notes:"Compliance-focused brief for customers in the federal space."},
+  {asset_name:"s3-webhooks.yaml",gdrive_url:"https://drive.google.com/file/d/1l7eOlqjQIhVZbn65wxODEJnhXVDbqLpw/view?usp=drivesdk",asset_type:"Solution Brief",topic:["Scalability"],persona:["Technical","Manager"],stage:["Exploring","Evaluating"],notes:"Strategic brief on managing mixed AWS/Azure/GCP environments."},
+  {asset_name:"mcp.yaml",gdrive_url:"https://drive.google.com/file/d/1Jv5e5s_VXDJFAyC96g_Z6XLtgQe8Zqin/view?usp=drivesdk",asset_type:"Internal / Operational",topic:[],persona:[],stage:[],notes:"Internal Only. Project management spreadsheet for feature rollouts."},
+  {asset_name:"low-level.yaml",gdrive_url:"https://drive.google.com/file/d/1c4OvrC-kN7qIBMmJvSxmDFjeGOJroa8a/view?usp=drivesdk",asset_type:"Webinar / Demo",topic:["Workflow / Automation"],persona:["Technical"],stage:["Evaluating"],notes:"Full-length recording of a technical feature launch event."},
+  {asset_name:"Flows Lab: base64 LIMITAION S3 Upload - Image Resize",gdrive_url:"https://docs.google.com/document/d/1sbToX8WojNpe_e80kEkbYBclo5XLh5BjLDKqdaWzMkk/edit?usp=drivesdk",asset_type:"Competitive Comparison",topic:["Pricing / ROI"],persona:["Manager","Executive"],stage:["Evaluating","Negotiating"],notes:"Specific guide for sales on how to price and position against TFC."},
+  {asset_name:"Tines deep-dive competitive analysis",gdrive_url:"https://docs.google.com/document/d/1B3nrAj894OW2ArbA95t-4zgWk7E9EuhVzEoFsmhE02o/edit?usp=drivesdk",asset_type:"Internal / Operational",topic:[],persona:[],stage:[],notes:"Internal Only. Meeting notes from a pricing review."},
+  {asset_name:"n8n deep-dive competitive analysis",gdrive_url:"https://docs.google.com/document/d/1ChDsIIpLLjC8kydOIWCaKKv9PT4tOnhncV_FPbBnBD4/edit?usp=drivesdk",asset_type:"Sales Deck",topic:["Workflow / Automation"],persona:["Technical"],stage:["Evaluating"],notes:"Slides used to introduce a technical demo session."},
+  {asset_name:"Series C Announcement Timeline",gdrive_url:"https://docs.google.com/document/d/1u6StEKpzGA6Z-zuUxU6Ez7cxpuETsvTNZ2aaNQSXFLU/edit?usp=drivesdk",asset_type:"Blog / Thought Leadership",topic:["Migration"],persona:["Technical","Manager"],stage:["Exploring"],notes:"Thought piece on the OpenTofu project; builds industry credibility."},
+  {asset_name:"Funding Announcement | LinkedIn post | Approved Messaging",gdrive_url:"https://docs.google.com/document/d/1cXN_CSOmgB_mZULP88taVFCgwIfmysJKnORAo_BMwXI/edit?usp=drivesdk",asset_type:"Technical Deep Dive",topic:["Workflow / Automation"],persona:["Technical"],stage:["Evaluating"],notes:"Guide on advanced deployment patterns; helps win complex engineering deals."},
+  {asset_name:"Funding Announcement | LinkedIn post | Spacelift",gdrive_url:"https://docs.google.com/document/d/1aVwEJuPdS4CkTO34GYMz3s70o-v4AFXqR3YPSRcD8tY/edit?usp=drivesdk",asset_type:"Case Study",topic:["Scalability"],persona:["Manager","Executive"],stage:["Evaluating","Negotiating"],notes:"Proof point focusing on platform reliability and enterprise scale."},
+  {asset_name:"Home Page Banner",gdrive_url:"https://docs.google.com/document/d/1t7BXdw3ZSBxALD95wnH6cAKMsQqF1mXPU62m-HqWOYM/edit?usp=drivesdk",asset_type:"Internal / Operational",topic:[],persona:[],stage:[],notes:"Internal Only. Recruitment data for the marketing team."},
+  {asset_name:"NEWS // Serices C Press Release - Final Approved by 5 Elms",gdrive_url:"https://docs.google.com/document/d/1C3I1BMYcKu8BPw4g1mNC58vJSE5b0BGuVFpJUrXbFQ8/edit?usp=drivesdk",asset_type:"Sales Deck",topic:["Pricing / ROI"],persona:["Manager","Executive"],stage:["Negotiating","Closing"],notes:"Framework for presenting ROI to existing customers."},
+  {asset_name:"Funding Announcement FAQ",gdrive_url:"https://docs.google.com/document/d/1VRUZQA6zaOkAM0N4VWX8HROkv3YhmDbvNA8vKKgGAnc/edit?usp=drivesdk",asset_type:"Webinar / Video",topic:["Developer Experience"],persona:["Technical","End-User"],stage:["Exploring","Evaluating"],notes:"5-minute overview video of the entire Spacelift platform."},
+  {asset_name:"Messaging for 'Who we are' from PR",gdrive_url:"https://docs.google.com/document/d/1oGMfEtsXpKguk_2RrJq_Gd2CllRbMFlKomBnnYfQlBk/edit?usp=drivesdk",asset_type:"Product Overview",topic:["Governance","Security"],persona:["Technical"],stage:["Evaluating"],notes:"Details on how to set up and manage the drift detection feature."},
+  {asset_name:"Funding Announcement Brief",gdrive_url:"https://docs.google.com/document/d/1XQyWRfnpys8i7HnBdYqVEwqTxjgTF1AOIHUaoApF6qE/edit?usp=drivesdk",asset_type:"Internal / Operational",topic:[],persona:[],stage:[],notes:"Internal Only. Raw transcript from a product interview."},
+  {asset_name:"Dimitri's Slack Announcement to General",gdrive_url:"https://docs.google.com/document/d/1HUpsBecQpK1AQc6cPJpGebrOnku4Y0_K0BkcUufAAds/edit?usp=drivesdk",asset_type:"Solution Brief",topic:["Developer Experience"],persona:["Manager","Technical"],stage:["Exploring","Evaluating"],notes:"Explains how Spacelift enables engineers to provision their own infra safely."},
+  {asset_name:"Rob's Slack Announcement to Sales & GTM",gdrive_url:"https://docs.google.com/document/d/1eTvNA6T9kuviNTzce5cQjw0nwBXvdhyIWjs4iEOS5ic/edit?usp=drivesdk",asset_type:"Sales Deck",topic:["Security","Compliance"],persona:["Executive","Manager"],stage:["Evaluating"],notes:"The primary deck for InfoSec reviews; covers compliance, OPA, and SSO."},
+  {asset_name:"Prospect Email Copy",gdrive_url:"https://docs.google.com/document/d/1L7t2d2Kc9ZFvdqerK3Devuf9F9L3jHlV1mbKPhcLnSA/edit?usp=drivesdk",asset_type:"Webinar / Demo",topic:["Governance","Compliance"],persona:["Technical","End-User"],stage:["Evaluating"],notes:"Focused video demo showing how to write a \"plan\" policy."},
+  {asset_name:"Funding Announcement to Customers from Aaron",gdrive_url:"https://docs.google.com/document/d/18dHVKjsyblR1hSG9BPV3G0x7oCN-kEtWS78xSXVcvuk/edit?usp=drivesdk",asset_type:"Other",topic:[],persona:[],stage:[],notes:"Internal Only. Early draft of a product announcement."},
+  {asset_name:"[Alternate] Prospect Email Copy",gdrive_url:"https://docs.google.com/document/d/1zRzPahAfgqVpHfFIKZJ7lpbyHSrgMlEetMRSsepHkWI/edit?usp=drivesdk",asset_type:"Datasheet",topic:["Workflow / Automation"],persona:["Technical"],stage:["Exploring","Evaluating"],notes:"Feature list for the Spacelift Terraform provider."},
+  {asset_name:"Pawel's LinkedIn Post for Funding Announcement",gdrive_url:"https://docs.google.com/document/d/1rOKF8ZuxCaEHNrQb_NxrRaa2GeA5Bh2BufeYcApcMiw/edit?usp=drivesdk",asset_type:"Internal / Operational",topic:[],persona:[],stage:[],notes:"Internal Only. Q4 marketing spend tracker."},
+  {asset_name:"Funding Round - blog post draft CEO",gdrive_url:"https://docs.google.com/document/d/1nktDtpjmt5c1KcM5V_wvYVHwghUSx2dhtkGGDvr8yTI/edit?usp=drivesdk",asset_type:"Technical Deep Dive",topic:["Workflow / Automation"],persona:["Technical"],stage:["Evaluating"],notes:"Guide on integrating AWS CloudControl API for faster resource updates."},
+  {asset_name:"Unify Series A Announcement Playbook.pdf",gdrive_url:"https://drive.google.com/file/d/1KApB_IbT8MkH9xnmkqrXfmIL2nnXKjEs/view?usp=drivesdk",asset_type:"Sales Deck",topic:["Workflow / Automation"],persona:["Manager"],stage:["Exploring"],notes:"Slides for co-selling with cloud partners (AWS/Azure)."},
+  {asset_name:"Example Announcements",gdrive_url:"https://docs.google.com/document/d/1JqetPJA8tfp7c7kfUnw1fjRuB5qlpe5F2upenZtVyow/edit?usp=drivesdk",asset_type:"Internal / Operational",topic:[],persona:[],stage:[],notes:"Internal Only. Feedback from a website UX review."},
+  {asset_name:"Spacelift Series C Press Release - Polish Version",gdrive_url:"https://drive.google.com/file/d/1CkIc4h_oadvAQa7DPIaVVStbPa6zv5DF/view?usp=drivesdk",asset_type:"Product Overview",topic:["Migration","Workflow / Automation"],persona:["Technical","Manager"],stage:["Exploring","Evaluating"],notes:"Details on Spacelift's first-class support for OpenTofu."},
+  {asset_name:"XYZ.pl Questions",gdrive_url:"https://drive.google.com/file/d/18NNxbgVsq7VATHkVDvGSuI6wSiwEVZas/view?usp=drivesdk",asset_type:"Webinar / Video",topic:["Workflow / Automation"],persona:["Technical","End-User"],stage:["Exploring"],notes:"Short video snippet on why GitOps is hard."},
+  {asset_name:"[Draft] Ultimate Security, Ultimate Flexibility",gdrive_url:"https://docs.google.com/document/d/1a184jhtFxPbL59qQjordvsi8ZRvYM0ikZnSikKCw--4/edit?usp=drivesdk",asset_type:"Sales Deck",topic:["Scalability","Workflow / Automation"],persona:["Executive","Manager"],stage:["Evaluating"],notes:"Most recent core deck; includes multi-region support."},
+  {asset_name:"FedRAMP UPDATE",gdrive_url:"https://docs.google.com/presentation/d/1HFB8RALffYVXwqYceNyU0YTUkgPgJ3aHhbrWYfbkdvk/edit?usp=drivesdk",asset_type:"Case Study",topic:["Scalability"],persona:["Manager","Executive"],stage:["Evaluating","Negotiating"],notes:"Proof point for very large-scale enterprise deployments."},
+  {asset_name:"FedRAMP, Ent Deployment Options, & AAC Launch",gdrive_url:"https://docs.google.com/presentation/d/1yGFrWTtJS7B1MGI3RMfy1B2wjaUonHXcaXYXHdRM_lY/edit?usp=drivesdk",asset_type:"Internal / Operational",topic:[],persona:[],stage:[],notes:"Internal Only. Raw transcript from a webinar."},
+  {asset_name:"FedRAMP, Enterprise Deployment Options & AAC Launch Plan & Needs",gdrive_url:"https://docs.google.com/document/d/1qeFKaTxjclvpU_X-GYDDMWa6O1FpCS6loboQAyRKghE/edit?usp=drivesdk",asset_type:"Technical Deep Dive",topic:["Workflow / Automation"],persona:["Technical"],stage:["Evaluating"],notes:"Setup guide specifically for Bitbucket environments."},
+  {asset_name:"FedRAMP Questions we need to answer",gdrive_url:"https://docs.google.com/document/d/17JwXGTHmubX0aZSsrWo_x8lZXpandTkLV3SAMlsqH8E/edit?usp=drivesdk",asset_type:"Internal / Operational",topic:[],persona:[],stage:[],notes:"Internal Only. Questions for a candidate interview."},
+  {asset_name:"FedRAMP-Authorized Spacelift Slide",gdrive_url:"https://docs.google.com/presentation/d/1jj2GNZk1Ow7y91q9ZNP7Zpszns4DujSMUt3m5OYJUnw/edit?usp=drivesdk",asset_type:"Solution Brief",topic:["Cost Optimization"],persona:["Manager","Executive"],stage:["Exploring","Evaluating"],notes:"Briefing on how Spacelift visibility helps reduce cloud waste."},
+  {asset_name:"FedRAMP-Authorized+BG.pdf",gdrive_url:"https://drive.google.com/file/d/19Uy04D_ktpCTz0kHkoEEzaQYOTr5FUPf/view?usp=drivesdk",asset_type:"Sales Deck",topic:["Workflow / Automation","Scalability"],persona:["Executive"],stage:["Exploring"],notes:"High-level \"Why Spacelift\" slides for non-technical buyers."},
+  {asset_name:"Advanced Access Control +BG.pdf",gdrive_url:"https://drive.google.com/file/d/1IkpjIBC5QxjDA99FYS_1uRba8RD0ARZu/view?usp=drivesdk",asset_type:"Internal / Operational",topic:[],persona:[],stage:[],notes:"Internal Only. Notes from a competitor research session."},
+  {asset_name:"[For Drafting] Enterprise Deployment Options Messaging Doc",gdrive_url:"https://docs.google.com/document/d/1PgBNYClZMeBAWwAXEAlHayx5DNdyZiv0iYj0RYyIuzE/edit?usp=drivesdk",asset_type:"Webinar / Demo",topic:["Developer Experience"],persona:["End-User","Technical"],stage:["Exploring","Evaluating"],notes:"Video showing the day-to-day workflow of a developer in Spacelift."},
+  {asset_name:"[Internal] Enterprise Deployment Options Messaging Doc",gdrive_url:"https://docs.google.com/document/d/1B0OINyW774XT2U9RfhUSMeDwIvdoT_g_kNWdLNFBCB4/edit?usp=drivesdk",asset_type:"Product Overview",topic:["Governance","Compliance"],persona:["Technical"],stage:["Evaluating"],notes:"Overview of policy-as-code features and the Rego editor."},
+  {asset_name:"Saturnhead AI FAQ",gdrive_url:"https://docs.google.com/document/d/10hTCg73XJIB1hvz8pv2yEAr8Ldf8DLPicfqoV1C2Fi4/edit?usp=drivesdk",asset_type:"Internal / Operational",topic:[],persona:[],stage:[],notes:"Internal Only. Interview schedule for the PMM team."},
+  {asset_name:"Saturnhead AI messaging Doc",gdrive_url:"https://docs.google.com/document/d/1tI0gb7nNv7Oxnp8QgOc6LTJFWnLx8sfLs1_j7NGuPEw/edit?usp=drivesdk",asset_type:"Sales Deck",topic:["Workflow / Automation"],persona:["Manager"],stage:["Exploring"],notes:"Guide for SDRs on how to pitch Spacelift on a cold call."},
+  {asset_name:"Naming Decisions",gdrive_url:"https://docs.google.com/document/d/1kgwhBLSma1H5-aZW8jhZG0VDN8Vdv5TYWyR4is6Ykjw/edit?usp=drivesdk",asset_type:"Technical Deep Dive",topic:["Security","Scalability"],persona:["Technical"],stage:["Evaluating"],notes:"Network diagram and guide for deploying workers inside a VPC."},
+  {asset_name:"BYLINE // The DevOps Bottleneck",gdrive_url:"https://drive.google.com/file/d/1d8xJhQ1aV5gbx8rpplLyCMEAx9eJ-sNp/view?usp=drivesdk",asset_type:"Case Study",topic:["Compliance","Pricing / ROI"],persona:["Manager","Executive"],stage:["Evaluating","Negotiating"],notes:"Case study highlighting the \"Compliance\" ROI of the platform."},
+  {asset_name:"Spring 25 Launch Enablement Video.mp4",gdrive_url:"https://drive.google.com/file/d/1oGLsDcF2nbQVS7mkwfs-7RlAE9fokXBt/view?usp=drivesdk",asset_type:"Internal / Operational",topic:[],persona:[],stage:[],notes:"Internal Only. Raw transcript from a planning meeting."},
+  {asset_name:"Service Now Brief",gdrive_url:"https://docs.google.com/document/d/1ylvljaugeXHgpomzEdwHtyYTaoUftAK7Gy3mWhHlE6s/edit?usp=drivesdk",asset_type:"Sales Deck",topic:["Migration","Pricing / ROI"],persona:["Manager","Executive"],stage:["Evaluating","Closing"],notes:"Deck specifically used to move customers away from Terraform Cloud."},
+  {asset_name:"Ansible Launch Plan",gdrive_url:"https://docs.google.com/presentation/d/1XN_oUT4hME4_XsOEGkN7VjFq72-TxEDoTeqyrbYFFmo/edit?usp=drivesdk",asset_type:"Webinar / Video",topic:["Workflow / Automation"],persona:["Technical","End-User"],stage:["Exploring","Evaluating"],notes:"The original \"General Availability\" demo video; still effective."},
+  {asset_name:"Product Launch Brief Template - Ansible v2",gdrive_url:"https://docs.google.com/document/d/1h4t1zRn-xEWlg0OyPEOH_JIKuwjJx2KtC4U7eGALZjY/edit?usp=drivesdk",asset_type:"Internal / Operational",topic:[],persona:[],stage:[],notes:"Internal Only. Final 2025 budget report."},
+  {asset_name:"ansibleOnePager",gdrive_url:"https://docs.google.com/document/d/1cH25X4B9NIox9QeZdVo7QUwhOod0Vso9cray5HWpBsQ/edit?usp=drivesdk",asset_type:"Unclear Asset Type",topic:[],persona:[],stage:[],notes:"Needs Deep Review. File titled \"Final Doc v2\" with no context; cannot open."},
+  {asset_name:"Sense Case Study Questions",gdrive_url:"https://docs.google.com/document/d/19zvZSeuIVoTfCbxlYZGuGLtxU__3lfAhZSNJOt9adYc/edit?usp=drivesdk",asset_type:"Internal / Operational",topic:["[Null]"],persona:["[Null]"],stage:["[Null]"],notes:"Internal Only. Spreadsheet for tracking customer logo permissions."},
+  {asset_name:"Case Study Issues & Suggested Solutions",gdrive_url:"https://docs.google.com/document/d/1XylpJ-9NM1YCuBgmMF9cq8hk5fKrbMrh-UFM1uliwIk/edit?usp=drivesdk",asset_type:"Internal / Operational",topic:["[Null]"],persona:["[Null]"],stage:["[Null]"],notes:"Internal Only. Questions for an upcoming customer interview."},
+  {asset_name:"Customers with logo use",gdrive_url:"https://docs.google.com/spreadsheets/d/1pPBLN1o5Nrv-Fzjkbw7PxGLkNFboNPBb28TvgUAKhDw/edit?usp=drivesdk",asset_type:"Case Study",topic:["Scalability","Workflow / Automation"],persona:["Manager","Executive"],stage:["Evaluating","Negotiating"],notes:"Final PDF case study for Sense; excellent for proving scale in Terraform environments."},
+  {asset_name:"[For Customers] 2025 Case Study Program",gdrive_url:"https://docs.google.com/presentation/d/19PwyUWY5kolaIU1oYfecL7LY0aM4F6Mrb4-jOOZuN4o/edit?usp=drivesdk",asset_type:"Internal / Operational",topic:["[Null]"],persona:["[Null]"],stage:["[Null]"],notes:"Internal Only. Preparatory questions for the Sense case study."},
+  {asset_name:"Customers approved for logo use",gdrive_url:"https://docs.google.com/spreadsheets/d/1jg4Dr5LWAmM1j_lpsh_kJZcYyRReEjE3BnLra4bsKyQ/edit?usp=drivesdk",asset_type:"Internal / Operational",topic:["[Null]"],persona:["[Null]"],stage:["[Null]"],notes:"Internal Only. Notes on issues encountered during case study drafting."},
+  {asset_name:"[Internal] 2025 Case Study Program",gdrive_url:"https://docs.google.com/presentation/d/1YA3FubtMaLH9qHRtbQbpJMlBgnCdX1W086cAUajsdp4/edit?usp=drivesdk",asset_type:"Case Study",topic:["Scalability","Migration"],persona:["Manager","Executive"],stage:["Evaluating","Negotiating"],notes:"High-impact story on multi-cloud orchestration; vital for competitive deals."},
+  {asset_name:"[Customers] 2025 Case Study Program",gdrive_url:"https://docs.google.com/presentation/d/1_OH-Y-I64QQX1DVAvP-wRQbErebwknew2TMeBQz-Leo/edit?usp=drivesdk",asset_type:"Customer Story",topic:["Workflow / Automation"],persona:["Manager","Technical"],stage:["Evaluating"],notes:"Partner-focused story; useful for showing how service providers use Spacelift."},
+  {asset_name:"Case Study Candidates",gdrive_url:"https://docs.google.com/spreadsheets/d/1lb9OIhF1IgUldKsMjkbYawms0LMUybE25u3B0safZDI/edit?usp=drivesdk",asset_type:"Internal / Operational",topic:["[Null]"],persona:["[Null]"],stage:["[Null]"],notes:"Internal Only. Email thread regarding logo usage rights."},
+  {asset_name:"Case Study Process",gdrive_url:"https://docs.google.com/document/d/13lYCSQf3_YQ-e4cZNDUpQL4ffdCPYYOwLF8vEsXEMWg/edit?usp=drivesdk",asset_type:"Case Study",topic:["Governance","Compliance"],persona:["Executive","Manager"],stage:["Evaluating","Negotiating"],notes:"Enterprise story focusing on governance and repo management at scale."},
+  {asset_name:"Churned & Unfulfilled Co-marketing Discounted Customers",gdrive_url:"https://docs.google.com/spreadsheets/d/1cwhAS9zuAZvJ5W3Yrh4t6tJVSblJdv0nv54oDfIvfas/edit?usp=drivesdk",asset_type:"Technical Deep Dive",topic:["Scalability","Workflow / Automation"],persona:["Technical"],stage:["Evaluating"],notes:"A technical breakdown of the architecture used in the Kinect case study."},
+  {asset_name:"Top Quotes from Spacelift Case Studies",gdrive_url:"https://docs.google.com/document/d/1J_cof1V5kVmCVBpDNdVx06EgUw2vP7OhazB6Liz-vT4/edit?usp=drivesdk",asset_type:"Internal / Operational",topic:["[Null]"],persona:["[Null]"],stage:["[Null]"],notes:"Internal Only. Schedule for upcoming customer advocacy releases."},
+  {asset_name:"Linus Health Case Study Questions",gdrive_url:"https://docs.google.com/document/d/1pnA161Y3-xb-6koEhMo0EEvvVbQePCC1QhdjTGOvy4s/edit?usp=drivesdk",asset_type:"Case Study",topic:["Scalability","Workflow / Automation"],persona:["Manager","Executive"],stage:["Evaluating","Negotiating"],notes:"Proof of platform stability under high load; essential for large enterprise prospects."},
+  {asset_name:"Case Study: Linus Health",gdrive_url:"https://docs.google.com/document/d/1I5dA46RgXQVSI9dEBjUpJzyolJf2IrYnLGL5hyh82SY/edit?usp=drivesdk",asset_type:"Webinar / Demo",topic:["Scalability","Developer Experience"],persona:["Technical","Manager"],stage:["Evaluating"],notes:"Recorded webinar with Checkr team; great for building credibility with architects."},
+  {asset_name:"Case Study | DNAnexus",gdrive_url:"https://docs.google.com/document/d/19ZKFGW77KhXYJ45nfDpHYj2vWZCpE2u3BhaR76coqAw/edit?usp=drivesdk",asset_type:"Case Study",topic:["Governance","Security"],persona:["Manager","Executive"],stage:["Evaluating","Negotiating"],notes:"High-value story specifically validating the Drift Detection feature."},
+  {asset_name:"DNAnexus Case Study Questions",gdrive_url:"https://docs.google.com/document/d/1DPZn2psFmeM_AtL4sMFIrKcyA-oTLQxRiIctTmPs4NE/edit?usp=drivesdk",asset_type:"Internal / Operational",topic:["[Null]"],persona:["[Null]"],stage:["[Null]"],notes:"Internal Only. Raw transcript from the Kin interview."},
+  {asset_name:"Dojo.pdf",gdrive_url:"https://drive.google.com/file/d/1mORAYyptQS9AFBrrMF31TzuAMfi7w-_9/view?usp=drivesdk",asset_type:"Customer Story",topic:["Migration","Scalability"],persona:["Manager","Executive"],stage:["Evaluating"],notes:"Industry-specific story for retail prospects; focuses on cloud migration."},
+  {asset_name:"Case study: Dojo",gdrive_url:"https://docs.google.com/document/d/1KMVQuDW_dOhnGwLH0G1O7Y6qjFKGjMuO85tO_h5Vyus/edit?usp=drivesdk",asset_type:"Internal / Operational",topic:["[Null]"],persona:["[Null]"],stage:["[Null]"],notes:"Internal Only. Internal review notes on the Sainsbury's draft."},
+  {asset_name:"Dojo × Spacelift: unifying infrastructure as code with governance and visibility",gdrive_url:"https://docs.google.com/document/d/11t3mzghryq8JQ2sqifuwpZ9V_vZ9bHa1j_J5qaCFn0M/edit?usp=drivesdk",asset_type:"Case Study",topic:["Developer Experience","Workflow / Automation"],persona:["Executive","Manager"],stage:["Evaluating","Negotiating"],notes:"Enterprise-wide standardization story; ideal for CTO/VP level conversations."},
+  {asset_name:"crunchtime (1).pdf",gdrive_url:"https://drive.google.com/file/d/1kYhs74DjXQETAIzo8JB0g6jQDXVcR-NJ/view?usp=drivesdk",asset_type:"Sales Deck",topic:["Pricing / ROI","Scalability"],persona:["Executive","Manager"],stage:["Evaluating","Closing"],notes:"A slide deck summarizing key metrics from the top 5 case studies."},
+  {asset_name:"Case study transcript: Crunchtime",gdrive_url:"https://docs.google.com/document/d/1bExC05VbO4xYLuTYLx1_XOTQilrggwdryYVf5Q5wfbc/edit?usp=drivesdk",asset_type:"",topic:["Security","Compliance"],persona:["Manager","Executive"],stage:["Evaluating"],notes:""},
+  {asset_name:"Case study: Crunchtime",gdrive_url:"https://docs.google.com/document/d/1sQh_Q4aQvkMpzXqnnlnm7Hn0w0xRwcFv0zyikuwXzss/edit?usp=drivesdk",asset_type:"",topic:["[Null]"],persona:["[Null]"],stage:["[Null]"],notes:""},
+  {asset_name:"Crunchtime Case Study Questions",gdrive_url:"https://docs.google.com/document/d/1DJKJ45pPnIQx-Z6Zl4u03bjUKh4w61ksQ5mJDQU2fvA/edit?usp=drivesdk",asset_type:"",topic:["[Null]"],persona:["[Null]"],stage:["[Null]"],notes:""},
+  {asset_name:"Butterfly Network Scales Regulated Infrastructure with Spacelift",gdrive_url:"https://docs.google.com/document/d/1FmNLxIAe5iP_CfWyljL64ffpsg59lqaluZ_VWzHAedU/edit?usp=drivesdk",asset_type:"",topic:["Workflow / Automation","Developer Experience"],persona:["Manager","Technical"],stage:["Evaluating","Negotiating"],notes:""},
+  {asset_name:"Butterfly Network case study questions",gdrive_url:"https://docs.google.com/document/d/1VxAY-t-zc96fQe41kPoMjcjwFhk8I9a9oP2Fpzja0M4/edit?usp=drivesdk",asset_type:"",topic:["Pricing / ROI"],persona:["Manager","Executive"],stage:["Evaluating","Negotiating"],notes:""},
+  {asset_name:"Case Study: Ping Identity",gdrive_url:"https://docs.google.com/document/d/15eEhp56s_iPLmtowJRzz0EsaikQYDQxjuhF4uve6oDc/edit?usp=drivesdk",asset_type:"",topic:["Workflow / Automation"],persona:["Technical","Manager"],stage:["Evaluating"],notes:""},
+  {asset_name:"Case Study: Figma",gdrive_url:"https://docs.google.com/document/d/1V4ywMfVvk7mpY86iFBaWzpDKD1WA4PwRPPV5oS4gOLg/edit?usp=drivesdk",asset_type:"",topic:["Security","Compliance"],persona:["Manager","Executive"],stage:["Evaluating","Negotiating"],notes:""},
+  {asset_name:"Enabling a Smooth Migration to OpenTofu for Talkdesk",gdrive_url:"https://docs.google.com/document/d/1-Z0i0EXJv5J274ub9yISZ7wSsO7YTuZIMJhK4Muq9Mc/edit?usp=drivesdk",asset_type:"",topic:["Developer Experience"],persona:["Manager","Technical"],stage:["Evaluating"],notes:""},
+  {asset_name:"Case Study: FirstCape",gdrive_url:"https://docs.google.com/document/d/1mV62WQNtVLieuNeXmqn84fQ3N00KHbu00ifoRxBjVow/edit?usp=drivesdk",asset_type:"",topic:["[Null]"],persona:["[Null]"],stage:["[Null]"],notes:""},
+  {asset_name:"FirstCape Case Study Questions",gdrive_url:"https://docs.google.com/document/d/1Kd1Q7IOyuiLi8kJnY_dJLzVv7y0uSBlBBmnRe3kwW_I/edit?usp=drivesdk",asset_type:"",topic:["Compliance","Governance"],persona:["Executive","Manager"],stage:["Evaluating"],notes:""},
+  {asset_name:"Infinite Campus Case Study Questions",gdrive_url:"https://docs.google.com/document/d/1yryDvP2tMk20BXNPmc3E5EinFfN3Ke4FY0c1IJAU8cw/edit?usp=drivesdk",asset_type:"",topic:["[Null]"],persona:["[Null]"],stage:["[Null]"],notes:""},
+  {asset_name:"Commercetools case study questions",gdrive_url:"https://docs.google.com/document/d/1tMb9EpTv93lzYNFUEAXEpjkP3yfW6nVTI0XnhIaqVVw/edit?usp=drivesdk",asset_type:"",topic:["Security","Compliance"],persona:["Manager","Executive"],stage:["Evaluating","Negotiating"],notes:""},
+  {asset_name:"Coinme Snapshot Questions",gdrive_url:"https://docs.google.com/document/d/1sKiYr2dgZnGIXgyFhlO9pM4wDChZcf_NSrMIc4oCutk/edit?usp=drivesdk",asset_type:"",topic:["Developer Experience"],persona:["Technical","End-User"],stage:["Exploring","Evaluating"],notes:""},
+  {asset_name:"IXL Learning Case Study Questions (Technical)",gdrive_url:"https://docs.google.com/document/d/1rVpXanaQsodgES2VfJOAIANytBfHcIvmS0eYGE3P3rA/edit?usp=drivesdk",asset_type:"",topic:["[Null]"],persona:["[Null]"],stage:["[Null]"],notes:""},
+  {asset_name:"Case study - Formation Bio.pdf",gdrive_url:"https://drive.google.com/file/d/1cFKNR1_pDXmsstWBnyLxubnnVJq1iL6I/view?usp=drivesdk",asset_type:"",topic:["[Null]"],persona:["[Null]"],stage:["[Null]"],notes:""},
+  {asset_name:"Case Study - Moov.pdf",gdrive_url:"https://drive.google.com/file/d/12XD1uQY4x5W7kTkGBLgTLzVG5uEJul1o/view?usp=drivesdk",asset_type:"",topic:["Cost Optimization","Scalability"],persona:["Manager","Executive"],stage:["Evaluating","Negotiating"],notes:""},
+  {asset_name:"TrueCar: Upgrading Our Infrastructure with OpenTofu",gdrive_url:"https://docs.google.com/document/d/1FYwDHqujONQcFi3e6FYi65MfkFzOOn8tSqx8Yub-l6k/edit?usp=drivesdk",asset_type:"",topic:["Cost Optimization"],persona:["Manager","Technical"],stage:["Evaluating"],notes:""},
+  {asset_name:"Case Study | TrueCar",gdrive_url:"https://docs.google.com/document/d/1sAqPYlwGblLzoFZ-qa6kz5vddGT7C2ZGTPmq6wb-znk/edit?usp=drivesdk",asset_type:"",topic:["Scalability","Workflow / Automation"],persona:["Manager","Executive"],stage:["Evaluating","Negotiating"],notes:""},
+  {asset_name:"Case Study - TrueCar.pdf",gdrive_url:"https://drive.google.com/file/d/161ftDbPoyTL0JUeAdPqbls0gDrHHydsP/view?usp=drivesdk",asset_type:"",topic:["Scalability"],persona:["Technical"],stage:["Evaluating"],notes:""},
+  {asset_name:"Case study | Pomelo",gdrive_url:"https://docs.google.com/document/d/1w8BsaTz_YTuxSMbwys4G6pt3_Q_TBTXycWC2SDFV1LU/edit?usp=drivesdk",asset_type:"",topic:["[Null]"],persona:["[Null]"],stage:["[Null]"],notes:""},
+  {asset_name:"Case Study - Pomelo.pdf",gdrive_url:"https://drive.google.com/file/d/1UIHaCP-FNXKS9gaak9RFOm1fH_duflLL/view?usp=drivesdk",asset_type:"",topic:["[Null]"],persona:["[Null]"],stage:["[Null]"],notes:""},
+  {asset_name:"Case Study - PayFit .pdf",gdrive_url:"https://drive.google.com/file/d/1pRcB8s50DUi2z2_fByNf_-m3wF40-LfH/view?usp=drivesdk",asset_type:"",topic:["Workflow / Automation","Scalability"],persona:["Executive","Manager"],stage:["Evaluating","Negotiating"],notes:""},
+  {asset_name:"Case Study | Payfit",gdrive_url:"https://docs.google.com/document/d/12okvotg3WylDbVLIc15xbaz0n44NevXgEwG9w-tP3WA/edit?usp=drivesdk",asset_type:"",topic:["[Null]"],persona:["[Null]"],stage:["[Null]"],notes:""},
+  {asset_name:"Case study | Airtime Rewards",gdrive_url:"https://docs.google.com/document/d/1-DicPDcyJZQxMDtvuPqe20DSMs4wFqqk-iQYK6T82Pw/edit?usp=drivesdk",asset_type:"",topic:["Compliance","Security"],persona:["Executive","Manager"],stage:["Evaluating","Negotiating"],notes:""},
+  {asset_name:"Case Study - Airtime Rewards.pdf",gdrive_url:"https://drive.google.com/file/d/1hkr0L-mgZXKtkGS3JUQvPRmbz9UntHsc/view?usp=drivesdk",asset_type:"",topic:["Security","Compliance"],persona:["Technical","Manager"],stage:["Evaluating"],notes:""},
+  {asset_name:"Case study | Archipelago",gdrive_url:"https://docs.google.com/document/d/1dlTC4MRWMgWm0e-pm7Qj6BDYghePLkNUNUFBCpY_SSA/edit?usp=drivesdk",asset_type:"",topic:["[Null]"],persona:["[Null]"],stage:["[Null]"],notes:""},
+  {asset_name:"Case study: Xealth",gdrive_url:"https://docs.google.com/document/d/1PwmnRKKfeQm3IAC8I5BgvAOgTHXawO46W-FcCvA6kRw/edit?usp=drivesdk",asset_type:"",topic:["[Null]"],persona:["[Null]"],stage:["[Null]"],notes:""},
+  {asset_name:"Case Study - Xealth.pdf",gdrive_url:"https://drive.google.com/file/d/1nKr3L4eeZJXQFcdlXoBwGNPDHud7UVrs/view?usp=drivesdk",asset_type:"",topic:["Workflow / Automation","Developer Experience"],persona:["Manager","Technical"],stage:["Evaluating","Negotiating"],notes:""},
+  {asset_name:"Case study | Varner",gdrive_url:"https://docs.google.com/document/d/1pszq3s9SfPZIObmGNJfex1241nONDc_G_-VEgnr9rc0/edit?usp=drivesdk",asset_type:"",topic:["Pricing / ROI"],persona:["Executive","Manager"],stage:["Evaluating","Negotiating"],notes:""},
+  {asset_name:"Case Study - VARNER.pdf",gdrive_url:"https://drive.google.com/file/d/1M92dPY51ouLqorsKXaEBDAW3yoEaMFp_/view?usp=drivesdk",asset_type:"",topic:["[Null]"],persona:["[Null]"],stage:["[Null]"],notes:""},
+  {asset_name:"Case study | Völur",gdrive_url:"https://docs.google.com/document/d/1VEX4705L7942g6v4wttBDuINHN2SFWkc-PJfvgQGoM8/edit?usp=drivesdk",asset_type:"",topic:["[Null]"],persona:["[Null]"],stage:["[Null]"],notes:""},
+  {asset_name:"Case Study - Völur.pdf",gdrive_url:"https://drive.google.com/file/d/1seYPOuVCTsku42-cTZK0VVquuon6WeNx/view?usp=drivesdk",asset_type:"",topic:["[Null]"],persona:["[Null]"],stage:["[Null]"],notes:""},
+  {asset_name:"Case Study - Orbica.pdf",gdrive_url:"https://drive.google.com/file/d/1Ezrc3vPYPlTFcQgELm2pD4BNmJLX2B8y/view?usp=drivesdk",asset_type:"",topic:["Workflow / Automation"],persona:["Manager","Executive"],stage:["Exploring","Evaluating"],notes:""},
+  {asset_name:"Case Studyy - Sqills.pdf",gdrive_url:"https://drive.google.com/file/d/1FpMwyJDyx4bM5gA4atfbueMy5Esx0KOM/view?usp=drivesdk",asset_type:"",topic:["[Null]"],persona:["[Null]"],stage:["[Null]"],notes:""},
+  {asset_name:"Case study | Novibet",gdrive_url:"https://docs.google.com/document/d/1Dzvf25RB8zs1CebAT4jWiCtTX_piRyCLE54zEvJdbEw/edit?usp=drivesdk",asset_type:"",topic:["[Null]"],persona:["[Null]"],stage:["[Null]"],notes:""},
+  {asset_name:"Case Study - Novibet.pdf",gdrive_url:"https://drive.google.com/file/d/1PfH8uBFUtw3T0Pbo_JGGyFY2suIK0J-v/view?usp=drivesdk",asset_type:"",topic:["Workflow / Automation","Scalability"],persona:["Manager","Executive"],stage:["Evaluating","Negotiating"],notes:""},
+  {asset_name:"Case Study - Redfin.pdf",gdrive_url:"https://drive.google.com/file/d/1TTaPjTqx4-dIGuF7sEMYpmksoWBRi8XB/view?usp=drivesdk",asset_type:"",topic:["[Null]"],persona:["[Null]"],stage:["[Null]"],notes:""},
+  {asset_name:"Case study: Redfin",gdrive_url:"https://docs.google.com/document/d/1kYRZxJ-9UwZu6VTBlAB_Nx_m1qbPRaBZRhBkBdxKKcI/edit?usp=drivesdk",asset_type:"",topic:["[Null]"],persona:["[Null]"],stage:["[Null]"],notes:""},
+  {asset_name:"Case Study - Handshake.pdf",gdrive_url:"https://drive.google.com/file/d/1I1yPnlHoa5hEFUe3JC1yJL0geGL9qd0O/view?usp=drivesdk",asset_type:"",topic:["[Null]"],persona:["[Null]"],stage:["[Null]"],notes:""},
+  {asset_name:"Case study | Handshake",gdrive_url:"https://docs.google.com/document/d/1O9ytPns5yCN4JXtR8q81T2zBPlPkonklTn4hMfinhFc/edit?usp=drivesdk",asset_type:"",topic:["Scalability"],persona:["Manager","Executive"],stage:["Evaluating","Negotiating"],notes:""},
+  {asset_name:"casestudy_spacelift-duolingo_v0.7_A4.pdf",gdrive_url:"https://drive.google.com/file/d/1vzX4G_SwKkQnO79JL3kHqgD-0caqwYJq/view?usp=drivesdk",asset_type:"",topic:["Scalability","Migration"],persona:["Manager","Executive"],stage:["Evaluating","Negotiating"],notes:""},
+  {asset_name:"Duolingo Experience Case Study",gdrive_url:"https://docs.google.com/document/d/1EZaSz5O6grVm6DjNwuSzEFS8AD5s4_8XxjD-lS1q-nY/edit?usp=drivesdk",asset_type:"",topic:["[Null]"],persona:["[Null]"],stage:["[Null]"],notes:""},
+  {asset_name:"PAR Retail Experience Case Study - UNPUBLISHED",gdrive_url:"https://docs.google.com/document/d/1DCut8yx-ZkD4zizKAw05klt-0_u9nN9pqTAt-l5a880/edit?usp=drivesdk",asset_type:"",topic:["Governance","Compliance"],persona:["Executive","Manager"],stage:["Evaluating","Negotiating"],notes:""},
+  {asset_name:"Case Study - MadeiraMadeira.pdf",gdrive_url:"https://drive.google.com/file/d/1adp8znEPM37OZt6uVjyEFWkPEyyefmN_/view?usp=drivesdk",asset_type:"",topic:["[Null]"],persona:["[Null]"],stage:["[Null]"],notes:""},
+  {asset_name:"Case Study - Affinity.pdf",gdrive_url:"https://drive.google.com/file/d/1bnbVumBdgfGbLcYL-27HENLGCBlG6j3H/view?usp=drivesdk",asset_type:"",topic:["Scalability","Workflow / Automation"],persona:["Manager","Executive"],stage:["Evaluating","Negotiating"],notes:""},
+  {asset_name:"Case study - Affinity",gdrive_url:"https://docs.google.com/document/d/1WI8XjbeKqov39-v5wYOYvfC24WHzCIKXEhEgS_60-Qw/edit?usp=drivesdk",asset_type:"",topic:["Scalability","Pricing / ROI"],persona:["Technical","Manager"],stage:["Evaluating"],notes:""},
+  {asset_name:"Case Study - Picnic Technologies.pdf",gdrive_url:"https://drive.google.com/file/d/1TxEwGo7tgJlyveWOiWWonLTF10ImSz3G/view?usp=drivesdk",asset_type:"",topic:["Workflow / Automation","Developer Experience"],persona:["Manager","Executive"],stage:["Evaluating","Negotiating"],notes:""},
+  {asset_name:"Case study - Logixboard.pdf",gdrive_url:"https://drive.google.com/file/d/1Z0NYC6Jp_L2kcvVqdJiPaeRpkDP6yGal/view?usp=drivesdk",asset_type:"",topic:["Technical Deep Dive","Workflow / Automation"],persona:["Technical"],stage:["Evaluating"],notes:""},
+  {asset_name:"Case Study - SpotOn.pdf",gdrive_url:"https://drive.google.com/file/d/1NNH_A8jb7iGlagYQP7f421CZGvgKQcDu/view?usp=drivesdk",asset_type:"",topic:["Migration","Scalability"],persona:["Manager","Executive"],stage:["Evaluating","Negotiating"],notes:""},
+  {asset_name:"Case Study - Brace.pdf",gdrive_url:"https://drive.google.com/file/d/1VC7aW_H-asD77Ozb7xOfsiajsGo2JoZ2/view?usp=drivesdk",asset_type:"",topic:["[Null]"],persona:["[Null]"],stage:["[Null]"],notes:""},
+  {asset_name:"Tier Mobility - OLD VERSION",gdrive_url:"https://docs.google.com/document/d/1OXNfS_d7T-m4DwCvQmOI9CZue2dav5ZRe7uII-NQ1Bk/edit?usp=drivesdk",asset_type:"",topic:["[Null]"],persona:["[Null]"],stage:["[Null]"],notes:""},
+  {asset_name:"Case Study - Tier Mobility.pdf",gdrive_url:"https://drive.google.com/file/d/1-iU22sSXo-_55L5uaf0NfNMIDvx4Lp7O/view?usp=drivesdk",asset_type:"",topic:["Developer Experience","Workflow / Automation"],persona:["Executive","Manager"],stage:["Evaluating","Negotiating"],notes:""},
+  {asset_name:"Lightspeed - OLD VERSION",gdrive_url:"https://docs.google.com/document/d/1GDFre_2l8jT46C0FUJ0u7m9f4WnMcxR0kCNvTfW31cI/edit?usp=drivesdk",asset_type:"",topic:["Developer Experience"],persona:["Manager","Executive"],stage:["Evaluating","Closing"],notes:""},
+  {asset_name:"Case Study - Lightspeed.pdf",gdrive_url:"https://drive.google.com/file/d/1BfdqBX4BfNG-Mrxs5arm6SOODKw9xHcM/view?usp=drivesdk",asset_type:"",topic:["Compliance","Governance"],persona:["Executive","Manager"],stage:["Evaluating","Negotiating"],notes:""},
+  {asset_name:"Case Study Interview cloudposse - OLD VERSION",gdrive_url:"https://docs.google.com/document/d/1O6718x-Awh59mOHL618TekuO7VjXPf8jaMPfZ5t9R4g/edit?usp=drivesdk",asset_type:"",topic:["Governance","Security"],persona:["Technical"],stage:["Evaluating"],notes:""},
+  {asset_name:"Case study - Cloud Posse.pdf",gdrive_url:"https://drive.google.com/file/d/12kCnCB9ew1DsakKPP6VpA9QMTQ9F7Bnf/view?usp=drivesdk",asset_type:"",topic:["[Null]"],persona:["[Null]"],stage:["[Null]"],notes:""},
+  {asset_name:"Kin - OLD VERSION",gdrive_url:"https://docs.google.com/document/d/1x_uCQ5EoIZ58snghVfHhDdo5GMuxrq4IvpzHm4LkuK0/edit?usp=drivesdk",asset_type:"",topic:["Migration","Scalability"],persona:["Manager","Executive"],stage:["Evaluating"],notes:""},
+  {asset_name:"Case Study - Kin.pdf",gdrive_url:"https://drive.google.com/file/d/1LpHLEroPsqe5SH_VvDJd2u06jRbQqAa6/view?usp=drivesdk",asset_type:"",topic:["Migration"],persona:["Technical","Manager"],stage:["Evaluating"],notes:""},
+  {asset_name:"Case Study ChatGPT Update Instructions",gdrive_url:"https://docs.google.com/document/d/1psno1FJZ6-MT9ioaw3Wd9kD3BdvMn9nTIY8IhsDabbE/edit?usp=drivesdk",asset_type:"",topic:["Scalability","Workflow / Automation"],persona:["Manager","Executive"],stage:["Evaluating","Negotiating"],notes:""},
+  {asset_name:"Spacelift-case-studies.json",gdrive_url:"https://docs.google.com/document/d/1gzzODzSx9AGwIM0lRdWsspPzc-9CHBKjyB9Xt-1I9r8/edit?usp=drivesdk",asset_type:"",topic:["Pricing / ROI"],persona:["Executive","Manager"],stage:["Negotiating","Closing"],notes:""},
+  {asset_name:"Closed/Won Q4 2026",gdrive_url:"https://docs.google.com/spreadsheets/d/1aHvdCDF8bQdSw2bdpIWxVhG0E6_Day9anCH0na3qPmU/edit?usp=drivesdk",asset_type:"",topic:["Cost Optimization","Scalability"],persona:["Manager","Executive"],stage:["Evaluating","Negotiating"],notes:""}
+];
+// ────────────────────────────────────────────────────────────────────────────────
+
+// ── STATE ──
+let S = { screen:"home", path:null, topic:null, persona:null, assetType:null, stage:null, error:null };
+
+// ── FILTER ──
+function filterAssets() {
+  return ASSETS.filter(a => {
+    if (S.topic     && !a.topic.includes(S.topic))         return false;
+    if (S.persona   && !a.persona.includes(S.persona))     return false;
+    if (S.assetType && a.asset_type !== S.assetType)        return false;
+    if (S.stage     && !a.stage.includes(S.stage))          return false;
+    return true;
+  });
+}
+
+function countFor(overrides) {
+  const m = { topic:S.topic, persona:S.persona, assetType:S.assetType, stage:S.stage, ...overrides };
+  return ASSETS.filter(a => {
+    if (m.topic     && !a.topic.includes(m.topic))     return false;
+    if (m.persona   && !a.persona.includes(m.persona)) return false;
+    if (m.assetType && a.asset_type !== m.assetType)    return false;
+    if (m.stage     && !a.stage.includes(m.stage))      return false;
+    return true;
+  }).length;
+}
+
+function reset() {
+  S = { screen:"home", path:null, topic:null, persona:null, assetType:null, stage:null, error:null };
+  render();
+}
+window.reset = reset;
+window.goBack = function() { S.screen = "path-" + S.path; render(); };
+
+// ── RENDER ──
+function render() {
+  const app = document.getElementById("app");
+  app.innerHTML = "";
+  const wrap = document.createElement("div");
+  wrap.innerHTML = `
+    <div class="header">
+      <div class="eyebrow">Spacelift · Sales Enablement</div>
+      <h1>Content Advisor</h1>
+      <p class="subtitle">Right content. Right conversation. Right now.</p>
+    </div>`;
+  const content = document.createElement("div");
+  ({
+    home: renderHome, results: renderResults,
+    "path-topic": renderTopicPath, "path-persona": renderPersonaPath,
+    "path-asset": renderAssetPath, "path-browse": renderBrowsePath,
+  }[S.screen] || renderHome)(content);
+  wrap.appendChild(content);
+  app.appendChild(wrap);
+}
+
+// ── SCREENS ──
+
+
+function renderHome(el) {
+  const total = ASSETS.length;
+  el.innerHTML = `<p style="font-family:sans-serif;font-size:13px;color:#5a5070;text-align:center;margin-bottom:18px">How can I help you find content? <span style="color:#3a2060;font-size:11px">${total} assets loaded</span></p>`;
+  [
+    { id:"topic",   icon:"🔥", label:"They raised a topic or objection",  desc:"Governance, security, pricing, compliance, AI…" },
+    { id:"persona", icon:"👤", label:"I know who I'm meeting with",        desc:"Technical, manager, executive, end user" },
+    { id:"asset",   icon:"📄", label:"I need a specific type of content",  desc:"Case study, battlecard, one-pager, deck, video…" },
+    { id:"browse",  icon:"🔎", label:"Browse everything",                  desc:"Filter by any combination of topic, persona, stage, type" },
+  ].forEach(opt => {
+    const card = document.createElement("div");
+    card.className = "option-card";
+    card.innerHTML = `<span class="oc-icon">${opt.icon}</span><span style="flex:1"><span class="oc-label">${opt.label}</span><span class="oc-desc">${opt.desc}</span></span><span class="oc-arrow">›</span>`;
+    card.onclick = () => { S.path = opt.id; S.screen = "path-" + opt.id; render(); };
+    el.appendChild(card);
+  });
+}
+
+function renderTopicPath(el) {
+  bc(el, ["Home","Topic / Objection"]);
+  el.innerHTML += `<p class="screen-title">What topic or objection came up?</p><p class="screen-hint">Pick the one driving the conversation.</p>`;
+  const grid = div("tag-grid");
+  TOPICS.forEach(t => {
+    const n = countFor({ topic:t.id });
+    const tag = div("tag" + (S.topic===t.id?" sel":""));
+    tag.innerHTML = `<span>${t.icon}</span>${t.label}<span class="count-badge">${n}</span>`;
+    if (n > 0) tag.onclick = () => { S.topic = S.topic===t.id ? null : t.id; render(); };
+    else tag.style.opacity = "0.25";
+    grid.appendChild(tag);
+  });
+  el.appendChild(grid);
+  if (S.topic) {
+    addDivider(el, "Narrow further? (optional)");
+    addStageRow(el);
+    addPersonaTags(el);
+  }
+  addBtnRow(el, filterAssets().length, !!S.topic);
+}
+
+function renderPersonaPath(el) {
+  bc(el, ["Home","Persona"]);
+  el.innerHTML += `<p class="screen-title">Who are you meeting with?</p><p class="screen-hint">Pick the primary person in the room.</p>`;
+  const grid = div("grid2");
+  PERSONAS.forEach(p => {
+    const n = countFor({ persona:p.id });
+    const card = div("persona-card" + (S.persona===p.id?" sel":""));
+    card.innerHTML = `<span class="pc-icon">${p.icon}</span><span class="pc-name">${p.label} <span class="count-badge">${n}</span></span><span class="pc-desc">${p.desc}</span>`;
+    if (n > 0) card.onclick = () => { S.persona = S.persona===p.id ? null : p.id; render(); };
+    else card.style.opacity = "0.25";
+    grid.appendChild(card);
+  });
+  el.appendChild(grid);
+  if (S.persona) {
+    addDivider(el, "What do they care about? (optional)");
+    addTopicTags(el);
+    addDivider(el, "Deal stage? (optional)");
+    addStageRow(el);
+  }
+  addBtnRow(el, filterAssets().length, !!S.persona);
+}
+
+function renderAssetPath(el) {
+  bc(el, ["Home","Asset Type"]);
+  el.innerHTML += `<p class="screen-title">What type of content do you need?</p><p class="screen-hint">Pick the format that fits your situation.</p>`;
+  const grid = div("asset-grid");
+  ASSET_TYPES.forEach(a => {
+    const n = countFor({ assetType:a.id });
+    const card = div("asset-card" + (S.assetType===a.id?" sel":""));
+    card.innerHTML = `<span class="ac-icon">${a.icon}</span><span><span class="ac-name">${a.label} <span class="count-badge">${n}</span></span><span class="ac-sub">${a.sub}</span></span>`;
+    if (n > 0) card.onclick = () => { S.assetType = S.assetType===a.id ? null : a.id; render(); };
+    else card.style.opacity = "0.25";
+    grid.appendChild(card);
+  });
+  el.appendChild(grid);
+  if (S.assetType) {
+    addDivider(el, "Narrow by topic? (optional)");
+    addTopicTags(el);
+    addDivider(el, "Deal stage? (optional)");
+    addStageRow(el);
+  }
+  addBtnRow(el, filterAssets().length, !!S.assetType);
+}
+
+function renderBrowsePath(el) {
+  bc(el, ["Home","Browse All"]);
+  el.innerHTML += `<p class="screen-title">Filter by anything — or everything.</p><p class="screen-hint">All filters optional.</p>`;
+
+  [
+    { label:"Topic / Objection", fn: addTopicTags },
+    { label:"Persona",           fn: addPersonaTags },
+    { label:"Asset Type",        fn: addAssetTypeTags },
+    { label:"Sales Stage",       fn: addStageRow },
+  ].forEach(({ label, fn }) => {
+    const sec = div("filter-section");
+    sec.innerHTML = `<div class="filter-label">${label}</div>`;
+    fn(sec);
+    el.appendChild(sec);
+  });
+
+  const has = S.topic || S.persona || S.assetType || S.stage;
+  addBtnRow(el, filterAssets().length, !!has);
+}
+
+function renderResults(el) {
+  const assets = filterAssets();
+  const chips = [
+    S.topic     && TOPICS.find(t=>t.id===S.topic)?.label,
+    S.persona   && PERSONAS.find(p=>p.id===S.persona)?.label,
+    S.assetType && S.assetType,
+    S.stage     && S.stage,
+  ].filter(Boolean);
+
+  const header = div("results-header");
+  header.innerHTML = `
+    <div>
+      <div class="results-meta">${assets.length} asset${assets.length!==1?"s":""} found for</div>
+      <div class="r-chips">${chips.map(c=>`<span class="r-chip">${c}</span>`).join("")}</div>
+    </div>
+    <button class="btn-outline-purple" onclick="reset()">Start Over</button>`;
+  el.appendChild(header);
+
+  if (assets.length === 0) {
+    el.innerHTML += `<div class="no-results"><div class="no-results-icon">🔍</div><div class="no-results-msg">No assets match all your filters.</div><div class="no-results-hint">Try removing one filter to broaden results.</div></div>`;
+  } else {
+    assets.forEach(a => {
+      const card = div("result-card");
+      const topicBadges = a.topic.slice(0,2).map(t=>`<span class="topic-badge">${t}</span>`).join("");
+      card.innerHTML = `
+        <div class="result-top">
+          <div class="result-info">
+            <div class="result-badges">
+              <span class="type-badge" style="background:${TYPE_COLORS[a.asset_type]||'#ede9fe'}">${a.asset_type||"Asset"}</span>
+              ${topicBadges}
+            </div>
+            <div class="result-name">${a.asset_name}</div>
+            ${a.notes ? `<p class="result-notes">${a.notes}</p>` : ""}
+          </div>
+          <a href="${a.gdrive_url||'#'}" target="_blank" class="open-btn">Open ↗</a>
+        </div>`;
+      el.appendChild(card);
+    });
+  }
+
+  const refine = div("");
+  refine.style.cssText = "margin-top:14px;text-align:center;";
+  refine.innerHTML = `<button class="btn-ghost" style="font-size:12px" onclick="goBack()">← Refine filters</button>`;
+  el.appendChild(refine);
+}
+
+// ── COMPONENT HELPERS ──
+
+function div(cls) { const d = document.createElement("div"); if (cls) d.className = cls; return d; }
+
+function bc(el, items) {
+  const d = div("breadcrumb");
+  items.forEach((item, i) => {
+    const s = document.createElement("span");
+    s.className = i===items.length-1 ? "bc-active" : "bc-item";
+    s.textContent = item;
+    if (i===0) s.onclick = reset;
+    d.appendChild(s);
+    if (i < items.length-1) { const sep=document.createElement("span"); sep.className="bc-sep"; sep.textContent="›"; d.appendChild(sep); }
+  });
+  el.appendChild(d);
+}
+
+function addDivider(el, label) {
+  const d = div(""); d.innerHTML = `<div class="divider"></div><p class="narrow-label">${label}</p>`; el.appendChild(d);
+}
+
+function addTopicTags(el) {
+  const g = div("tag-grid");
+  TOPICS.forEach(t => {
+    const n = countFor({ topic:t.id });
+    const tag = div("tag" + (S.topic===t.id?" sel":""));
+    tag.innerHTML = `${t.icon} ${t.label}<span class="count-badge">${n}</span>`;
+    tag.onclick = () => { S.topic = S.topic===t.id ? null : t.id; render(); };
+    g.appendChild(tag);
+  });
+  el.appendChild(g);
+}
+
+function addPersonaTags(el) {
+  const g = div("tag-grid");
+  PERSONAS.forEach(p => {
+    const tag = div("tag" + (S.persona===p.id?" sel":""));
+    tag.innerHTML = `${p.icon} ${p.label}`;
+    tag.onclick = () => { S.persona = S.persona===p.id ? null : p.id; render(); };
+    g.appendChild(tag);
+  });
+  el.appendChild(g);
+}
+
+function addAssetTypeTags(el) {
+  const g = div("tag-grid");
+  ASSET_TYPES.forEach(a => {
+    const tag = div("tag" + (S.assetType===a.id?" sel":""));
+    tag.innerHTML = `${a.icon} ${a.label}`;
+    tag.onclick = () => { S.assetType = S.assetType===a.id ? null : a.id; render(); };
+    g.appendChild(tag);
+  });
+  el.appendChild(g);
+}
+
+function addStageRow(el) {
+  const r = div("stage-row"); r.style.marginBottom = "4px";
+  STAGES.forEach(st => {
+    const tag = div("stage-tag" + (S.stage===st.id?" sel":""));
+    tag.textContent = st.label;
+    tag.onclick = () => { S.stage = S.stage===st.id ? null : st.id; render(); };
+    r.appendChild(tag);
+  });
+  el.appendChild(r);
+}
+
+function addBtnRow(el, count, canGo) {
+  const r = div("btn-row"); r.style.marginTop = "20px";
+  const back = document.createElement("button"); back.className="btn-ghost"; back.textContent="← Back"; back.onclick=reset;
+  const go = document.createElement("button"); go.className="btn-purple"; go.disabled=!canGo;
+  go.textContent = canGo ? `Show ${count} asset${count!==1?"s":""}` : "Make a selection";
+  go.onclick = () => { S.screen="results"; render(); };
+  r.appendChild(back); r.appendChild(go); el.appendChild(r);
+}
+
+// ── BOOT ──
+render();
+</script>
+</body>
+</html>
